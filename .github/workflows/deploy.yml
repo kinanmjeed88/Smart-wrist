@@ -22,13 +22,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-
-      - name: Clean npm cache
-        run: npm cache clean --force
+          # تم حذف 'cache: npm' عمداً لمنع الأخطاء الناتجة عن الكاش الفاسد
 
       - name: Install Dependencies
-        run: npm install --force
+        # نستخدم --legacy-peer-deps لحل مشكلة التوافق (ERESOLVE) الأصلية
+        run: npm install --legacy-peer-deps
 
       - name: Build
         run: npm run build
