@@ -183,6 +183,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
     } else {
       recognition.start();
       setIsRecording(true);
+      // eslint-disable-next-line no-loop-func
       recognition.onresult = (event: any) => {
         setInput(event.results[0][0].transcript);
         setIsRecording(false);
