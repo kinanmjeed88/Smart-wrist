@@ -43,7 +43,7 @@ export const generateContent = async (
       }
     });
     
-    return response.text;
+    return response.text ?? '';
   } catch (error) {
     return handleError(error);
   }
@@ -70,7 +70,7 @@ export async function* generateContentStream(
     });
 
     for await (const chunk of responseStream) {
-        yield chunk.text;
+        yield chunk.text ?? '';
     }
   } catch (error) {
     yield handleError(error);
