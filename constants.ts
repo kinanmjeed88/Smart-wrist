@@ -1,4 +1,3 @@
-
 import { PersonalInfoItem } from './types';
 
 export const SYSTEM_PROMPT = `•لا تُقدِّم أي محتوى تم توليده أو استنتاجه أو التكهن به أو استدلاله على أنه حقيقة.
@@ -33,5 +32,5 @@ export const PERSONAL_DATA_STRUCTURED: PersonalInfoItem[] = [
   { name: 'العاب Winlator', url: 'https://t.me/+RSUhB6QkeAplOWYy', category: 'telegram', keywords: ['winlator'] },
   { name: 'كل القنوات بمجلد واحد', url: 'https://t.me/addlist/Gxcy1FFJONhkMjFi', category: 'telegram-folder', keywords: ['كل', 'all', 'مجلد', 'folder', 'تجميعة'] },
   { name: 'قناة اليوتيوب', url: 'https://youtube.com/@kinanmajeed?si=I2yuzJT2rRnEHLVg', category: 'youtube', keywords: ['youtube', 'يوتيوب', 'فيديو', 'فيديوهات', 'قناتي'] },
-  { name: 'حساب تيكتوك', url: 'https://www.tiktok.com/@techtouch6', category: 'tiktok', keywords: ['tiktok', 'تيكتوك', 'تيك توك'] }
+  { name: 'حساب تيكتوك', url: 'https://www.tiktok.com/@techtouch6', category: 'tiktok', keywords: ['tiktok', 'تيكتوك', 'تيك توك'] },
 ];
