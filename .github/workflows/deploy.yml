@@ -22,10 +22,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          # تم حذف 'cache: npm' عمداً لمنع الأخطاء الناتجة عن الكاش الفاسد
+          # تم حذف 'cache: npm' عمداً
+          
+      - name: Delete poisoned lock file
+        # هذا هو السطر الحاسم لحل خطأ EINTEGRITY
+        # يقوم بحذف ملف القفل التالف لإجبار npm على جلب ملفات جديدة
+        run: rm -f package-lock.json
 
       - name: Install Dependencies
-        # نستخدم --legacy-peer-deps لحل مشكلة التوافق (ERESOLVE) الأصلية
+        # ما زلنا بحاجة لهذا الأمر لحل مشكلة التوافق الأصلية
         run: npm install --legacy-peer-deps
 
       - name: Build
