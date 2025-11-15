@@ -21,3 +21,10 @@ export interface ChatMessage {
   };
   structuredData?: PersonalInfoItem[];
 }
+
+export interface NewsItem {
+  title: string;
+  summary: string;
+  link: string;
+  details: string;
+}

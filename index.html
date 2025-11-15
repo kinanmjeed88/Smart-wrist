@@ -8,7 +8,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- PDF Processing Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
-    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';</script>
+    <script>
+      if (typeof pdfjsLib !== 'undefined') {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
+      }
+    </script>
     <!-- DOCX Processing Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.18/mammoth.browser.min.js"></script>
     <!-- PDF Creation Library -->
@@ -27,7 +31,7 @@
 }
 </script>
 </head>
-  <body>
+  <body class="bg-gray-900">
     <div id="root"></div>
     <!-- The data-presets attribute tells Babel how to transpile the code -->
     <script type="text/babel" data-presets="react,typescript" data-type="module" src="./index.tsx"></script>
