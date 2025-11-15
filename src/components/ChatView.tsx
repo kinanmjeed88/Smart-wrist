@@ -16,6 +16,7 @@ if (recognition) {
 }
 
 interface ChatViewProps {
+  apiKey: string;
   messages: ChatMessage[];
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
 }
@@ -28,7 +29,7 @@ const fileToBase64 = (file: File): Promise<string> =>
     reader.onerror = (error) => reject(error);
   });
 
-export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => {
+export const ChatView: React.FC<ChatViewProps> = ({ apiKey, messages, setMessages }) => {
   const [input, setInput] = useState('');
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
@@ -85,13 +86,14 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
       const extractedText = await extractTextFromFile(file);
       if (!extractedText) {
          addSystemMessage('لم يتم العثور على نص في الملف.');
+         setIsLoading(false);
          return;
       }
 
       addSystemMessage('تم استخراج النص. جاري الترجمة...');
       const translationPrompt = `Translate the following text to Arabic, line by line. Each original line should be followed by its Arabic translation on the next line.\n\n${extractedText}`;
       
-      const stream = generateContentStream(translationPrompt);
+      const stream = generateContentStream(apiKey, translationPrompt);
       let translatedText = '';
       for await (const chunk of stream) {
         translatedText += chunk;
@@ -129,6 +131,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
               imagePart = { inlineData: { mimeType: imageFile.type, data: base64Data } };
           } catch (error) {
               addSystemMessage("خطأ في معالجة الصورة.");
+              setIsLoading(false);
               return;
           }
       }
@@ -137,7 +140,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
       setMessages((prev) => [...prev, { id: aiMessageId, sender: 'ai', text: '' }]);
       
       try {
-          const stream = generateContentStream(prompt, imagePart);
+          const stream = generateContentStream(apiKey, prompt, imagePart);
           let fullResponse = '';
           for await (const chunk of stream) {
               fullResponse += chunk;
@@ -197,7 +200,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
       <div className="flex-1 overflow-y-auto p-2 space-y-3">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex items-start group ${msg.sender === 'user' ? 'justify-end' : msg.sender === 'system' ? 'justify-center' : 'justify-start'}`}>
-            {msg.sender === 'ai' && (
+            {msg.sender === 'ai' && msg.text && (
               <button onClick={() => handleCopy(msg.text, msg.id)} className="flex-shrink-0 p-1 mt-0.5 mr-1 text-gray-500 hover:text-gray-200 transition-colors rounded-full">
                  <CopyIcon className="w-4 h-4" />
               </button>
@@ -225,7 +228,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
             </div>
           </div>
         ))}
-        {isLoading && messages.length > 0 && messages[messages.length - 1].sender !== 'ai' && (
+        {isLoading && (
              <div className="flex justify-start">
                 <div className="max-w-[80%] rounded-lg px-2 py-1 bg-gray-700">
                     <div className="flex items-center space-x-2 space-x-reverse">
