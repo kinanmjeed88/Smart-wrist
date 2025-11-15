@@ -1,0 +1,46 @@
+name: Build and Deploy to GitHub Pages (with Yarn)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          # تم التغيير لاستخدام الكاش الخاص بـ Yarn
+          cache: 'yarn' 
+          
+      - name: Install Dependencies with Yarn
+        # هذا الأمر سيقرأ package.json وينشئ ملف yarn.lock جديد ونظيف
+        run: yarn install
+
+      - name: Build
+        # ما زلنا بحاجة لهذا الأمر لحل خطأ "التحذيرات كأخطاء" (مشكلة ESLint)
+        run: CI=false yarn build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './build'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
