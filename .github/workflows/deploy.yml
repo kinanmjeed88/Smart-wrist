@@ -22,15 +22,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          # تم التغيير لاستخدام الكاش الخاص بـ Yarn
-          cache: 'yarn' 
-          
+          # تم حذف 'cache: yarn' عمداً لأنه يسبب خطأ "lock file not found"
+
       - name: Install Dependencies with Yarn
-        # هذا الأمر سيقرأ package.json وينشئ ملف yarn.lock جديد ونظيف
         run: yarn install
 
       - name: Build
-        # ما زلنا بحاجة لهذا الأمر لحل خطأ "التحذيرات كأخطاء" (مشكلة ESLint)
         run: CI=false yarn build
 
       - name: Setup Pages
