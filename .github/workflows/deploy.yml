@@ -1,37 +1,45 @@
-# GitHub Action for building and deploying the React app to GitHub Pages
-
 name: Build and Deploy to GitHub Pages
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
-  build_and_deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: '20'
+          # تم حذف 'cache: npm' عمداً لتجنب أي أخطاء تلف (corruption)
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install Dependencies
+        # الخطوة 1: إصلاح خطأ ERESOLVE (مشكلة التوافق)
+        run: npm install --legacy-peer-deps
 
       - name: Build
-        # Set CI=false to treat warnings as warnings, not errors, preventing build failures.
+        # الخطوة 2: إصلاح خطأ "التحذيرات كأخطاء" (مشكلة ESLint)
         run: CI=false npm run build
 
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './build'
+
       - name: Deploy to GitHub Pages
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          npm run deploy
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        id: deployment
+        uses: actions/deploy-pages@v4
