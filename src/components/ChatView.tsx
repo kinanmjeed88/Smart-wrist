@@ -183,7 +183,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
     } else {
       recognition.start();
       setIsRecording(true);
-      recognition.onresult = (event) => {
+      recognition.onresult = (event: any) => {
         setInput(event.results[0][0].transcript);
         setIsRecording(false);
       };
