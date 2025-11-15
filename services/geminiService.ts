@@ -1,12 +1,19 @@
+
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { SYSTEM_PROMPT } from '../constants';
 
+// For better type safety
+interface TextPart {
+  text: string;
+}
 interface ImagePart {
   inlineData: {
     mimeType: string;
     data: string;
   };
 }
+type Part = TextPart | ImagePart;
+
 
 const handleError = (error: unknown): string => {
     console.error("Gemini API call failed:", error);
@@ -17,17 +24,16 @@ const handleError = (error: unknown): string => {
 }
 
 export const generateContent = async (
-  apiKey: string,
   prompt: string,
   image?: ImagePart,
   systemInstruction: string = SYSTEM_PROMPT
 ): Promise<string> => {
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-    const parts = [{ text: prompt }];
+    const parts: Part[] = [{ text: prompt }];
     if (image) {
-      parts.unshift(image as any); // Add image first
+      parts.unshift(image);
     }
 
     const response: GenerateContentResponse = await ai.models.generateContent({
@@ -46,15 +52,14 @@ export const generateContent = async (
 
 
 export async function* generateContentStream(
-  apiKey: string,
   prompt: string,
   image?: ImagePart
 ): AsyncGenerator<string> {
   try {
-    const ai = new GoogleGenAI({ apiKey });
-    const parts = [{ text: prompt }];
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const parts: Part[] = [{ text: prompt }];
     if (image) {
-      parts.unshift(image as any);
+      parts.unshift(image);
     }
 
     const responseStream = await ai.models.generateContentStream({

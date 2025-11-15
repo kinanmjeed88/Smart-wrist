@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { generateContentStream } from '../services/geminiService';
 import { extractTextFromFile, createPdfFromText, createTxtFromText } from '../services/documentProcessor';
@@ -16,7 +17,6 @@ if (recognition) {
 }
 
 interface ChatViewProps {
-  apiKey: string;
   messages: ChatMessage[];
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
 }
@@ -29,7 +29,7 @@ const fileToBase64 = (file: File): Promise<string> =>
     reader.onerror = (error) => reject(error);
   });
 
-export const ChatView: React.FC<ChatViewProps> = ({ apiKey, messages, setMessages }) => {
+export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => {
   const [input, setInput] = useState('');
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
@@ -92,8 +92,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ apiKey, messages, setMessage
       addSystemMessage('تم استخراج النص. جاري الترجمة...');
       const translationPrompt = `Translate the following text to Arabic, line by line. Each original line should be followed by its Arabic translation on the next line.\n\n${extractedText}`;
       
-      // Using stream for consistency, though it's not strictly necessary here
-      const stream = generateContentStream(apiKey, translationPrompt);
+      const stream = generateContentStream(translationPrompt);
       let translatedText = '';
       for await (const chunk of stream) {
         translatedText += chunk;
@@ -139,7 +138,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ apiKey, messages, setMessage
       setMessages((prev) => [...prev, { id: aiMessageId, sender: 'ai', text: '' }]);
       
       try {
-          const stream = generateContentStream(apiKey, prompt, imagePart);
+          const stream = generateContentStream(prompt, imagePart);
           let fullResponse = '';
           for await (const chunk of stream) {
               fullResponse += chunk;

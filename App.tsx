@@ -1,15 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { ApiKeyInput } from './components/ApiKeyInput';
 import { ChatView } from './components/ChatView';
 import { PersonalInfoView } from './components/PersonalInfoView';
-import { SparklesIcon, InfoIcon, LogoutIcon } from './components/Icons';
+import { SparklesIcon, InfoIcon } from './components/Icons';
 import { ChatMessage } from './types';
 
 type View = 'chat' | 'personalInfo';
 
 const App: React.FC = () => {
-  const [apiKey, setApiKey] = useState<string | null>(() => localStorage.getItem('gemini-api-key'));
   const [view, setView] = useState<View>('chat');
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
@@ -36,32 +34,15 @@ const App: React.FC = () => {
     localStorage.setItem('personal-info-messages', JSON.stringify(personalInfoMessages));
   }, [personalInfoMessages]);
 
-  const handleSetApiKey = (key: string) => {
-    setApiKey(key);
-    localStorage.setItem('gemini-api-key', key);
-  };
-
-  const handleClearApiKey = () => {
-    setApiKey(null);
-    localStorage.removeItem('gemini-api-key');
-  };
-
-  if (!apiKey) {
-    return <ApiKeyInput onSetApiKey={handleSetApiKey} />;
-  }
-
   return (
     <div className="bg-gray-900 text-gray-200 h-screen w-screen flex flex-col font-sans text-xs">
       <header className="bg-gray-800 p-2 shadow-md z-10 flex justify-between items-center">
         <h1 className="text-sm font-bold text-center text-cyan-400 flex-1">المساعد الشخصي الذكي</h1>
-        <button onClick={handleClearApiKey} title="تغيير مفتاح API" className="text-gray-400 hover:text-white transition-colors">
-          <LogoutIcon className="w-4 h-4" />
-        </button>
       </header>
       
       <main className="flex-1 overflow-hidden">
-        {view === 'chat' && <ChatView apiKey={apiKey} messages={chatMessages} setMessages={setChatMessages} />}
-        {view === 'personalInfo' && <PersonalInfoView apiKey={apiKey} messages={personalInfoMessages} setMessages={setPersonalInfoMessages} />}
+        {view === 'chat' && <ChatView messages={chatMessages} setMessages={setChatMessages} />}
+        {view === 'personalInfo' && <PersonalInfoView messages={personalInfoMessages} setMessages={setPersonalInfoMessages} />}
       </main>
 
       <footer className="bg-gray-800 p-1 flex justify-around items-center border-t border-gray-700">
