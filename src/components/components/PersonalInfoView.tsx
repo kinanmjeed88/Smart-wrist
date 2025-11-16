@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChatMessage } from '../types';
-import { PERSONAL_DATA_STRUCTURED } from '../constants';
+import { ChatMessage } from '../../types';
+import { PERSONAL_DATA_STRUCTURED } from '../../constants';
 import { SendIcon, MicrophoneIcon } from './Icons';
-import { generateContent } from '../services/geminiService';
+import { generateContent } from '../../services/geminiService';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
 // Web Speech API

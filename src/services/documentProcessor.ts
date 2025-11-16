@@ -17,6 +17,8 @@ export const extractTextFromFile = async (file: File): Promise<string | null> =>
     const arrayBuffer = await file.arrayBuffer();
     const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
     return result.value;
+  } else if (file.type === 'text/plain') {
+    return file.text();
   }
   return null;
 };

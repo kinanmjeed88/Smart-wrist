@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { generateContentStream } from '../services/geminiService';
-import { extractTextFromFile, createPdfFromText, createTxtFromText } from '../services/documentProcessor';
-import { ChatMessage } from '../types';
+import { generateContentStream } from '../../services/geminiService';
+import { extractTextFromFile, createPdfFromText, createTxtFromText } from '../../services/documentProcessor';
+import { ChatMessage } from '../../types';
 import { PaperclipIcon, SendIcon, FileIcon, DownloadIcon, CopyIcon, MicrophoneIcon } from './Icons';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
@@ -166,13 +166,15 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
     const fileToProcess = attachedFile;
     resetInput();
 
-    if (fileToProcess && !fileToProcess.type.startsWith('image/')) {
-        await handleFileTranslation(fileToProcess);
-    } else {
-        await handleStandardChatMessage(prompt, fileToProcess);
+    try {
+        if (fileToProcess && !fileToProcess.type.startsWith('image/')) {
+            await handleFileTranslation(fileToProcess);
+        } else {
+            await handleStandardChatMessage(prompt, fileToProcess);
+        }
+    } finally {
+        setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
   
   const toggleRecording = () => {
@@ -196,7 +198,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
       <div className="flex-1 overflow-y-auto p-2 space-y-3">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex items-start group ${msg.sender === 'user' ? 'justify-end' : msg.sender === 'system' ? 'justify-center' : 'justify-start'}`}>
-            {msg.sender === 'ai' && (
+            {msg.sender === 'ai' && msg.text && (
               <button onClick={() => handleCopy(msg.text, msg.id)} className="flex-shrink-0 p-1 mt-0.5 mr-1 text-gray-500 hover:text-gray-200 transition-colors rounded-full">
                  <CopyIcon className="w-4 h-4" />
               </button>
@@ -224,7 +226,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
             </div>
           </div>
         ))}
-        {isLoading && messages.length > 0 && messages[messages.length - 1].sender !== 'ai' && (
+        {isLoading && (
              <div className="flex justify-start">
                 <div className="max-w-[80%] rounded-lg px-2 py-1 bg-gray-700">
                     <div className="flex items-center space-x-2 space-x-reverse">

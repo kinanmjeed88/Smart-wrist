@@ -84,6 +84,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
       const extractedText = await extractTextFromFile(file);
       if (!extractedText) {
          addSystemMessage('لم يتم العثور على نص في الملف.');
+         setIsLoading(false); // Stop loading if no text
          return;
       }
 
