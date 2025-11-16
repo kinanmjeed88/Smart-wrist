@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 import { SYSTEM_PROMPT } from '../constants';
 import { NewsItem } from "../types";
@@ -18,24 +19,18 @@ type Part = TextPart | ImagePart;
 const handleError = (error: unknown): string => {
     console.error("Gemini API call failed:", error);
     if (error instanceof Error) {
-        // Check for common API key errors
-        if (error.message.includes('API key not valid')) {
-            return "مفتاح API غير صالح. يرجى التحقق منه والمحاولة مرة أخرى.";
-        }
         return `حدث خطأ أثناء الاتصال بالذكاء الاصطناعي: ${error.message}`;
     }
-    return "حدث خطأ غير معروف. يرجى التحقق من مفتاح API الخاص بك والاتصال بالإنترنت.";
+    return "حدث خطأ غير معروف. يرجى التحقق من اتصالك بالإنترنت.";
 }
 
 export const generateContent = async (
-  apiKey: string,
   prompt: string,
   image?: ImagePart,
   systemInstruction: string = SYSTEM_PROMPT
 ): Promise<string> => {
-  if (!apiKey) return "خطأ: مفتاح API مطلوب.";
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     const parts: Part[] = [{ text: prompt }];
     if (image) {
@@ -50,7 +45,7 @@ export const generateContent = async (
       }
     });
     
-    return response.text ?? '';
+    return response.text;
   } catch (error) {
     return handleError(error);
   }
@@ -58,16 +53,11 @@ export const generateContent = async (
 
 
 export async function* generateContentStream(
-  apiKey: string,
   prompt: string,
   image?: ImagePart
 ): AsyncGenerator<string> {
-  if (!apiKey) {
-    yield "خطأ: مفتاح API مطلوب.";
-    return;
-  }
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const parts: Part[] = [{ text: prompt }];
     if (image) {
       parts.unshift(image);
@@ -82,19 +72,16 @@ export async function* generateContentStream(
     });
 
     for await (const chunk of responseStream) {
-        yield chunk.text ?? '';
+        yield chunk.text;
     }
   } catch (error) {
     yield handleError(error);
   }
 }
 
-export const getAiNews = async (apiKey: string): Promise<NewsItem[]> => {
-  if (!apiKey) {
-      throw new Error("خطأ: مفتاح API مطلوب.");
-  }
+export const getAiNews = async (): Promise<NewsItem[]> => {
   try {
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const newsPrompt = `You are an expert AI news analyst. Your task is to provide the 10 most recent and significant pieces of news regarding AI innovations, new tools, and major advancements. Provide the output as a JSON array. Each object in the array must have the following keys: "title" (a concise headline, max 2 lines), "summary" (a brief summary, in Arabic, max 5 lines), "link" (the official URL to the tool or a reputable news source), and "details" (a more in-depth explanation in Arabic). Ensure the content is fresh and relevant.`;
 
     const newsSchema = {
@@ -123,7 +110,6 @@ export const getAiNews = async (apiKey: string): Promise<NewsItem[]> => {
     const jsonText = response.text.trim();
     const newsData = JSON.parse(jsonText);
 
-    // Basic validation
     if (!Array.isArray(newsData)) {
       throw new Error("Invalid data format received from API.");
     }
@@ -132,9 +118,6 @@ export const getAiNews = async (apiKey: string): Promise<NewsItem[]> => {
 
   } catch (error) {
     console.error("Failed to fetch AI news:", error);
-    if (error instanceof Error && error.message.includes('API key not valid')) {
-        throw new Error("مفتاح API غير صالح. يرجى التحقق منه والمحاولة مرة أخرى.");
-    }
     throw new Error("فشل في جلب أخبار الذكاء الاصطناعي. حاول تحديث الصفحة.");
   }
 };

@@ -1,4 +1,5 @@
 
+
 export interface PersonalInfoItem {
   name: string;
   url: string;
@@ -21,4 +22,12 @@ export interface ChatMessage {
     type: 'pdf' | 'txt';
   };
   structuredData?: PersonalInfoItem[];
+}
+
+// FIX: Added missing NewsItem interface.
+export interface NewsItem {
+  title: string;
+  summary: string;
+  link: string;
+  details: string;
 }
