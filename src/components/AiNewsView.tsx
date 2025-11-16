@@ -2,10 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { getAiNews } from '../services/geminiService';
 import { NewsItem } from '../types';
 
-interface AiNewsViewProps {
-  apiKey: string;
-}
-
 const NewsCardSkeleton: React.FC = () => (
     <div className="bg-gray-800 p-3 rounded-lg animate-pulse">
         <div className="h-4 bg-gray-700 rounded w-3/4 mb-3"></div>
@@ -21,7 +17,7 @@ const NewsCardSkeleton: React.FC = () => (
 );
 
 
-export const AiNewsView: React.FC<AiNewsViewProps> = ({ apiKey }) => {
+export const AiNewsView: React.FC = () => {
     const [news, setNews] = useState<NewsItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -32,7 +28,7 @@ export const AiNewsView: React.FC<AiNewsViewProps> = ({ apiKey }) => {
             try {
                 setIsLoading(true);
                 setError(null);
-                const newsItems = await getAiNews(apiKey);
+                const newsItems = await getAiNews();
                 setNews(newsItems);
             } catch (err) {
                 if (err instanceof Error) {
@@ -46,7 +42,7 @@ export const AiNewsView: React.FC<AiNewsViewProps> = ({ apiKey }) => {
         };
 
         fetchNews();
-    }, [apiKey]);
+    }, []);
 
     const handleShare = async (item: NewsItem) => {
         const shareData = {

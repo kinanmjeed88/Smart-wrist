@@ -6,7 +6,6 @@ import { generateContent } from '../services/geminiService';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
 // Web Speech API
-// FIX: Cast window to any to access non-standard SpeechRecognition properties
 const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 const recognition = SpeechRecognition ? new SpeechRecognition() : null;
 if (recognition) {
@@ -24,12 +23,11 @@ User's Question:`;
 
 
 interface PersonalInfoViewProps {
-  apiKey: string;
   messages: ChatMessage[];
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
 }
 
-export const PersonalInfoView: React.FC<PersonalInfoViewProps> = ({ apiKey, messages, setMessages }) => {
+export const PersonalInfoView: React.FC<PersonalInfoViewProps> = ({ messages, setMessages }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -54,7 +52,7 @@ export const PersonalInfoView: React.FC<PersonalInfoViewProps> = ({ apiKey, mess
     setIsLoading(true);
 
     const fullPrompt = `${PERSONAL_INFO_PROMPT} "${userInput}"`;
-    const aiResponseText = await generateContent(apiKey, fullPrompt, undefined, "You are a helpful assistant answering questions based only on provided data.");
+    const aiResponseText = await generateContent(fullPrompt, undefined, "You are a helpful assistant answering questions based only on provided data.");
 
     const aiMessage: ChatMessage = {
       id: Date.now().toString() + '-ai',

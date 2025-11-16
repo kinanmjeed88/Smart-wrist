@@ -6,7 +6,6 @@ import { PaperclipIcon, SendIcon, FileIcon, DownloadIcon, CopyIcon, MicrophoneIc
 import { MarkdownRenderer } from './MarkdownRenderer';
 
 // Web Speech API
-// FIX: Cast window to any to access non-standard SpeechRecognition properties
 const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 const recognition = SpeechRecognition ? new SpeechRecognition() : null;
 if (recognition) {
@@ -16,7 +15,6 @@ if (recognition) {
 }
 
 interface ChatViewProps {
-  apiKey: string;
   messages: ChatMessage[];
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
 }
@@ -29,7 +27,7 @@ const fileToBase64 = (file: File): Promise<string> =>
     reader.onerror = (error) => reject(error);
   });
 
-export const ChatView: React.FC<ChatViewProps> = ({ apiKey, messages, setMessages }) => {
+export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => {
   const [input, setInput] = useState('');
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
@@ -86,14 +84,13 @@ export const ChatView: React.FC<ChatViewProps> = ({ apiKey, messages, setMessage
       const extractedText = await extractTextFromFile(file);
       if (!extractedText) {
          addSystemMessage('لم يتم العثور على نص في الملف.');
-         setIsLoading(false);
          return;
       }
 
       addSystemMessage('تم استخراج النص. جاري الترجمة...');
       const translationPrompt = `Translate the following text to Arabic, line by line. Each original line should be followed by its Arabic translation on the next line.\n\n${extractedText}`;
       
-      const stream = generateContentStream(apiKey, translationPrompt);
+      const stream = generateContentStream(translationPrompt);
       let translatedText = '';
       for await (const chunk of stream) {
         translatedText += chunk;
@@ -131,7 +128,6 @@ export const ChatView: React.FC<ChatViewProps> = ({ apiKey, messages, setMessage
               imagePart = { inlineData: { mimeType: imageFile.type, data: base64Data } };
           } catch (error) {
               addSystemMessage("خطأ في معالجة الصورة.");
-              setIsLoading(false);
               return;
           }
       }
@@ -140,7 +136,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ apiKey, messages, setMessage
       setMessages((prev) => [...prev, { id: aiMessageId, sender: 'ai', text: '' }]);
       
       try {
-          const stream = generateContentStream(apiKey, prompt, imagePart);
+          const stream = generateContentStream(prompt, imagePart);
           let fullResponse = '';
           for await (const chunk of stream) {
               fullResponse += chunk;
@@ -169,13 +165,15 @@ export const ChatView: React.FC<ChatViewProps> = ({ apiKey, messages, setMessage
     const fileToProcess = attachedFile;
     resetInput();
 
-    if (fileToProcess && !fileToProcess.type.startsWith('image/')) {
-        await handleFileTranslation(fileToProcess);
-    } else {
-        await handleStandardChatMessage(prompt, fileToProcess);
+    try {
+      if (fileToProcess && !fileToProcess.type.startsWith('image/')) {
+          await handleFileTranslation(fileToProcess);
+      } else {
+          await handleStandardChatMessage(prompt, fileToProcess);
+      }
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
   
   const toggleRecording = () => {
@@ -186,7 +184,6 @@ export const ChatView: React.FC<ChatViewProps> = ({ apiKey, messages, setMessage
     } else {
       recognition.start();
       setIsRecording(true);
-      // eslint-disable-next-line no-loop-func
       recognition.onresult = (event: any) => {
         setInput(event.results[0][0].transcript);
         setIsRecording(false);
