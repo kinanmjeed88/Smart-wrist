@@ -45,7 +45,7 @@ export const generateContent = async (
       }
     });
     
-    return response.text;
+    return response.text ?? '';
   } catch (error) {
     return handleError(error);
   }
@@ -72,7 +72,7 @@ export async function* generateContentStream(
     });
 
     for await (const chunk of responseStream) {
-        yield chunk.text;
+        yield chunk.text ?? '';
     }
   } catch (error) {
     yield handleError(error);
@@ -107,7 +107,13 @@ export const getAiNews = async (): Promise<NewsItem[]> => {
       }
     });
 
-    const jsonText = response.text.trim();
+    const jsonText = (response.text ?? '').trim();
+    
+    // Prevent parsing empty string which would throw an error
+    if (!jsonText) {
+        return [];
+    }
+    
     const newsData = JSON.parse(jsonText);
 
     if (!Array.isArray(newsData)) {
