@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { getAiNews } from '../services/geminiService';
 import { NewsItem } from '../types';
 
@@ -23,26 +23,27 @@ export const AiNewsView: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchNews = async () => {
-            try {
-                setIsLoading(true);
-                setError(null);
-                const newsItems = await getAiNews();
-                setNews(newsItems);
-            } catch (err) {
-                if (err instanceof Error) {
-                    setError(err.message);
-                } else {
-                    setError("حدث خطأ غير متوقع.");
-                }
-            } finally {
-                setIsLoading(false);
+    const fetchNews = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+            const newsItems = await getAiNews();
+            setNews(newsItems);
+        } catch (err) {
+            if (err instanceof Error) {
+                setError(err.message);
+            } else {
+                setError("حدث خطأ غير متوقع.");
             }
-        };
-
-        fetchNews();
+        } finally {
+            setIsLoading(false);
+        }
     }, []);
+
+    useEffect(() => {
+        fetchNews();
+    }, [fetchNews]);
+
 
     const handleShare = async (item: NewsItem) => {
         const shareData = {
@@ -78,8 +79,15 @@ export const AiNewsView: React.FC = () => {
 
     if (error) {
         return (
-            <div className="h-full flex items-center justify-center p-4 text-center text-red-400">
-                <p>{error}</p>
+            <div className="h-full flex flex-col items-center justify-center p-4 text-center">
+                <p className="text-red-400 mb-4">{error}</p>
+                <button
+                    onClick={fetchNews}
+                    className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-3 rounded-md transition-colors text-sm"
+                    aria-label="إعادة محاولة جلب الأخبار"
+                >
+                    إعادة المحاولة
+                </button>
             </div>
         );
     }

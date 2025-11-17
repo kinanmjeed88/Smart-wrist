@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ChatView } from './components/ChatView';
 import { PersonalInfoView } from './components/PersonalInfoView';
 import { AiNewsView } from './components/AiNewsView';
-import { SparklesIcon, InfoIcon, NewsIcon } from './components/Icons';
+import { SparklesIcon, InfoIcon, NewsIcon, LogoutIcon } from './components/Icons';
 import { ChatMessage } from './types';
 
 type View = 'aiNews' | 'chat' | 'personalInfo';
@@ -21,12 +21,19 @@ const App: React.FC = () => {
     <div className="h-screen w-screen bg-gray-900 text-gray-200 flex flex-col font-sans text-sm">
       <header className="flex-shrink-0 bg-gray-800 p-2 flex justify-between items-center border-b border-gray-700">
         <div className="flex items-center space-x-2 space-x-reverse">
-          <img src={profileImage} alt="Profile" className="w-8 h-8 rounded-full" />
+          <img src={profileImage} alt="Profile" className="w-8 h-8 rounded-full object-cover" />
           <div>
             <h1 className="font-bold text-xs">Kinan Majeed</h1>
             <p className="text-gray-400 text-[10px]">Online</p>
           </div>
         </div>
+        <button
+          onClick={() => { alert('تم تسجيل الخروج'); }}
+          className="text-gray-400 hover:text-white p-1.5 rounded-full hover:bg-gray-700 transition-colors"
+          aria-label="تسجيل الخروج"
+        >
+            <LogoutIcon className="w-5 h-5" />
+        </button>
       </header>
 
       <main className="flex-1 overflow-hidden">
