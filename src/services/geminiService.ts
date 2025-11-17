@@ -1,10 +1,20 @@
-import { GoogleGenerativeAI, GenerateContentResponse, Part } from "@google/generative-ai";
+
+import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 import { SYSTEM_PROMPT } from '../constants';
 import { NewsItem } from "../types";
 
-// ملاحظة: قمت بتعديل الـ import ليطابق الإصدار الحديث.
-// وتأكد من أن type Part الخاص بك يطابق ما تتوقعه المكتبة أو قم بإزالته إذا كان
-// يسبب تعارضًا، لكن الخطأ الرئيسي هو .text()
+// For better type safety
+interface TextPart {
+  text: string;
+}
+interface ImagePart {
+  inlineData: {
+    mimeType: string;
+    data: string;
+  };
+}
+type Part = TextPart | ImagePart;
+
 
 const handleError = (error: unknown): string => {
     console.error("Gemini API call failed:", error);
@@ -16,36 +26,26 @@ const handleError = (error: unknown): string => {
 
 export const generateContent = async (
   prompt: string,
-  image?: Part, // تم تعديل النوع ليتوافق مع GoogleGenerativeAI
+  image?: ImagePart,
   systemInstruction: string = SYSTEM_PROMPT
 ): Promise<string> => {
   try {
-    // تأكد من أن متغير البيئة هذا مُعرف في بيئة البناء (Build Environment)
-    const apiKey = process.env.REACT_APP_GOOGLE_API_KEY; 
-    if (!apiKey) {
-      throw new Error("API Key is not defined.");
-    }
-    const genAI = new GoogleGenerativeAI(apiKey);
-    
-    const model = genAI.getGenerativeModel({ 
-      model: image ? "gemini-pro-vision" : "gemini-1.5-flash", // استخدام pro-vision إذا كان هناك صورة
-      systemInstruction: {
-        parts: [{ text: systemInstruction }],
-      },
-    });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     const parts: Part[] = [{ text: prompt }];
     if (image) {
       parts.unshift(image);
     }
 
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts }],
+    const response: GenerateContentResponse = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: { parts },
+      config: {
+          systemInstruction: systemInstruction,
+      }
     });
     
-    const response = result.response;
-    return response.text(); // *** التصحيح هنا: استخدام .text() كدالة ***
-
+    return response.text;
   } catch (error) {
     return handleError(error);
   }
@@ -54,34 +54,25 @@ export const generateContent = async (
 
 export async function* generateContentStream(
   prompt: string,
-  image?: Part // تم تعديل النوع
+  image?: ImagePart
 ): AsyncGenerator<string> {
   try {
-    const apiKey = process.env.REACT_APP_GOOGLE_API_KEY; // تأكد من أن المتغير متاح
-    if (!apiKey) {
-      throw new Error("API Key is not defined.");
-    }
-    const genAI = new GoogleGenerativeAI(apiKey);
-
-    const model = genAI.getGenerativeModel({
-      model: image ? "gemini-pro-vision" : "gemini-1.5-flash",
-      systemInstruction: {
-        parts: [{ text: SYSTEM_PROMPT }],
-      },
-    });
-
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const parts: Part[] = [{ text: prompt }];
     if (image) {
       parts.unshift(image);
     }
 
-    const result = await model.generateContentStream({
-      contents: [{ role: "user", parts }],
+    const responseStream = await ai.models.generateContentStream({
+        model: 'gemini-2.5-flash',
+        contents: { parts },
+        config: {
+            systemInstruction: SYSTEM_PROMPT,
+        }
     });
 
-    for await (const chunk of result.stream) {
-      const chunkText = chunk.text(); // *** التصحيح هنا: استخدام .text() كدالة ***
-      yield chunkText;
+    for await (const chunk of responseStream) {
+        yield chunk.text;
     }
   } catch (error) {
     yield handleError(error);
@@ -90,29 +81,34 @@ export async function* generateContentStream(
 
 export const getAiNews = async (): Promise<NewsItem[]> => {
   try {
-    const apiKey = process.env.REACT_APP_GOOGLE_API_KEY; // تأكد من أن المتغير متاح
-    if (!apiKey) {
-      throw new Error("API Key is not defined.");
-    }
-    const genAI = new GoogleGenerativeAI(apiKey);
-    
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const newsPrompt = `You are an expert AI news analyst. Your task is to provide the 10 most recent and significant pieces of news regarding AI innovations, new tools, and major advancements. Provide the output as a JSON array. Each object in the array must have the following keys: "title" (a concise headline, max 2 lines), "summary" (a brief summary, in Arabic, max 5 lines), "link" (the official URL to the tool or a reputable news source), and "details" (a more in-depth explanation in Arabic). Ensure the content is fresh and relevant.`;
 
-    // ملاحظة: schema definition قد تغيرت في الإصدارات الجديدة، 
-    // ولكن لنركز على الخطأ الحالي أولاً.
-    // إزالة Type من الـ import إذا لم تكن مستخدمة بشكل صحيح.
-    
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // افترض استخدام نموذج يدعم JSON
-    
-    const result = await model.generateContent(newsPrompt);
-    const response = result.response;
+    const newsSchema = {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING, description: 'The news headline.' },
+            summary: { type: Type.STRING, description: 'A short summary of the news in Arabic.' },
+            link: { type: Type.STRING, description: 'A URL to the tool or source.' },
+            details: { type: Type.STRING, description: 'A more detailed explanation in Arabic.' },
+          },
+          required: ['title', 'summary', 'link', 'details'],
+        },
+      };
 
-    const jsonText = response.text().trim(); // *** التصحيح هنا: استخدام .text() كدالة ***
-    
-    // إزالة علامات ```json و ``` المحيطة إذا كانت موجودة
-    const cleanedJsonText = jsonText.replace(/^```json\s*/, '').replace(/```$/, '');
-    
-    const newsData = JSON.parse(cleanedJsonText);
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: newsPrompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: newsSchema,
+      }
+    });
+
+    const jsonText = response.text.trim();
+    const newsData = JSON.parse(jsonText);
 
     if (!Array.isArray(newsData)) {
       throw new Error("Invalid data format received from API.");
