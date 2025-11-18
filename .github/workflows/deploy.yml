@@ -1,4 +1,4 @@
-name: Build and Deploy to GitHub Pages (Robust)
+name: Build and Deploy to GitHub Pages (Lightweight)
 
 on:
   push:
@@ -18,18 +18,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # <--- هذا هو الحل السحري لخطأ 500 (تحميل كامل للتاريخ)
+          fetch-depth: 1  # تحميل سريع جداً لتجنب خطأ 500
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          # بدون كاش لتجنب أي ملفات تالفة
 
       - name: Install Dependencies with Yarn
         # زيادة مهلة الشبكة لتجنب انقطاع الاتصال
         run: |
-          yarn config set network-timeout 300000
+          yarn config set network-timeout 600000
           yarn install
 
       - name: Build
