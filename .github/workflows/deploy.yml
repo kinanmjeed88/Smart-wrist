@@ -1,4 +1,4 @@
-name: Build and Deploy to GitHub Pages (with Yarn)
+name: Build and Deploy to GitHub Pages (Robust)
 
 on:
   push:
@@ -17,15 +17,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # <--- هذا هو الحل السحري لخطأ 500 (تحميل كامل للتاريخ)
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          # تم حذف 'cache: yarn' عمداً لأنه يسبب خطأ "lock file not found"
+          # بدون كاش لتجنب أي ملفات تالفة
 
       - name: Install Dependencies with Yarn
-        run: yarn install
+        # زيادة مهلة الشبكة لتجنب انقطاع الاتصال
+        run: |
+          yarn config set network-timeout 300000
+          yarn install
 
       - name: Build
         run: CI=false yarn build
