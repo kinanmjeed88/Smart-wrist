@@ -1,5 +1,5 @@
 {
-  "name": "المساعد الشخصي الذكي",
+  "name": "TechTouch",
   "description": "تطبيق ويب للدردشة مع الذكاء الاصطناعي والحصول على معلومات شخصية محددة. مصمم للشاشات الصغيرة جدًا.",
   "requestFramePermissions": [
     "microphone"

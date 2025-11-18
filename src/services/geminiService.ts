@@ -30,16 +30,6 @@ const handleError = (error: unknown): string => {
     return "حدث خطأ غير معروف. يرجى التحقق من اتصالك بالإنترنت.";
 }
 
-const cleanJsonText = (text: string): string => {
-  // First, try to find JSON inside code blocks
-  const match = text.match(/```json\s*([\s\S]*?)\s*```/);
-  if (match) {
-    return match[1].trim();
-  }
-  // Fallback: remove any markdown code block markers if the regex didn't match a specific block
-  return text.replace(/```json|```/g, "").trim();
-};
-
 export const generateContent = async (
   prompt: string,
   image?: ImagePart,
@@ -103,53 +93,71 @@ export async function* generateContentStream(
   }
 }
 
-export const getAiNews = async (): Promise<NewsItem[]> => {
+export async function* streamAiNews(): AsyncGenerator<NewsItem> {
   try {
     const apiKey = getApiKey();
     if (!apiKey) throw new Error("مفتاح API مفقود");
 
     const ai = new GoogleGenAI({ apiKey });
-    const newsPrompt = `You are an expert AI news analyst. Your task is to provide the 10 most recent and significant pieces of news regarding AI innovations, new tools, and major advancements. Provide the output as a JSON array. Each object in the array must have the following keys: "title" (a concise headline, max 2 lines), "summary" (a brief summary, in Arabic, max 5 lines), "link" (the official URL to the tool or a reputable news source), and "details" (a more in-depth explanation in Arabic). Ensure the content is fresh and relevant.`;
+    
+    // We request strict JSON Lines format for streaming parsing
+    const newsPrompt = `You are an expert AI news analyst. 
+    Task: Provide the 10 most recent and significant news items about AI.
+    Output Format: JSON Lines. Each line must be a single, valid JSON object. DO NOT wrap the output in an array []. DO NOT use markdown code blocks.
+    
+    Structure for each JSON object:
+    {
+      "title": "Concise headline (max 2 lines)",
+      "summary": "Brief summary in Arabic (max 4 lines)",
+      "link": "Official URL or source",
+      "details": "Detailed explanation in Arabic"
+    }
+    
+    Ensure the content is fresh and relevant. Start outputting immediately.`;
 
-    const newsSchema = {
-        type: Type.ARRAY,
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            title: { type: Type.STRING, description: 'The news headline.' },
-            summary: { type: Type.STRING, description: 'A short summary of the news in Arabic.' },
-            link: { type: Type.STRING, description: 'A URL to the tool or source.' },
-            details: { type: Type.STRING, description: 'A more detailed explanation in Arabic.' },
-          },
-          required: ['title', 'summary', 'link', 'details'],
-        },
-      };
-
-    const response = await ai.models.generateContent({
+    const responseStream = await ai.models.generateContentStream({
       model: 'gemini-2.5-flash',
       contents: newsPrompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: newsSchema,
-      }
     });
 
-    const jsonText = cleanJsonText(response.text ?? '');
-    
-    if (!jsonText) {
-        return [];
+    let buffer = '';
+
+    for await (const chunk of responseStream) {
+        const text = chunk.text || '';
+        buffer += text;
+
+        // Process the buffer line by line
+        let newlineIndex;
+        while ((newlineIndex = buffer.indexOf('\n')) >= 0) {
+            const line = buffer.slice(0, newlineIndex).trim();
+            buffer = buffer.slice(newlineIndex + 1);
+
+            if (line && line.startsWith('{') && line.endsWith('}')) {
+                try {
+                    // Attempt to fix potential trailing commas or small JSON errors if strictly necessary,
+                    // but standard JSON.parse should work if the model obeys JSON Lines.
+                    const item = JSON.parse(line) as NewsItem;
+                    yield item;
+                } catch (e) {
+                    console.warn("Failed to parse news line:", line);
+                }
+            }
+        }
     }
     
-    const newsData = JSON.parse(jsonText);
-
-    if (!Array.isArray(newsData)) {
-      throw new Error("Invalid data format received from API.");
+    // Process any remaining buffer if it's a complete JSON object
+    if (buffer.trim().startsWith('{') && buffer.trim().endsWith('}')) {
+         try {
+            const item = JSON.parse(buffer.trim()) as NewsItem;
+            yield item;
+        } catch (e) {
+            console.warn("Failed to parse remaining buffer:", buffer);
+        }
     }
-
-    return newsData as NewsItem[];
 
   } catch (error) {
-    console.error("Failed to fetch AI news:", error);
-    throw new Error("فشل في جلب أخبار الذكاء الاصطناعي. تأكد من صحة المفتاح أو المحاولة لاحقاً.");
+    console.error("Failed to stream AI news:", error);
+    // We can't easily yield an error object since the return type is NewsItem. 
+    // The UI handles the empty state or we could yield a dummy error item if needed.
   }
-};
+}
