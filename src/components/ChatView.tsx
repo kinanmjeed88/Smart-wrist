@@ -252,19 +252,31 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
         </div>
       )}
 
-      <div className="p-2 bg-gray-800 border-t border-gray-700 flex items-center space-x-2 space-x-reverse">
-        <input type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSend()} placeholder={ attachedFile ? "أضف تعليقًا أو أرسل الملف..." : "اكتب رسالتك..."} className="flex-1 bg-gray-700 text-gray-200 border border-gray-600 rounded-full px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-cyan-500" disabled={isLoading} />
+      {/* Compact Input Bar for Small Screens */}
+      <div className="p-1.5 bg-gray-800 border-t border-gray-700 flex items-center gap-1">
+        <input 
+            type="text" 
+            value={input} 
+            onChange={(e) => setInput(e.target.value)} 
+            onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSend()} 
+            placeholder={ attachedFile ? "اكتب تعليقاً..." : "رسالة..."} 
+            className="flex-1 min-w-0 bg-gray-700 text-gray-200 border border-gray-600 rounded-full px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-500 text-sm" 
+            disabled={isLoading} 
+        />
         <input type="file" accept="image/*,application/pdf,.docx" ref={fileInputRef} onChange={handleFileChange} className="hidden" disabled={isLoading} />
+        
         {recognition && (
-          <button onClick={toggleRecording} className={`p-2 rounded-full hover:bg-gray-700 text-gray-400 disabled:text-gray-600 ${isRecording ? 'text-red-500 animate-pulse' : ''}`} disabled={isLoading}>
-            <MicrophoneIcon className="w-4 h-4" />
+          <button onClick={toggleRecording} className={`flex-shrink-0 p-2 rounded-full hover:bg-gray-700 text-gray-400 disabled:text-gray-600 ${isRecording ? 'text-red-500 animate-pulse' : ''}`} disabled={isLoading}>
+            <MicrophoneIcon className="w-5 h-5" />
           </button>
         )}
-        <button onClick={() => fileInputRef.current?.click()} className="p-2 rounded-full hover:bg-gray-700 text-gray-400 disabled:text-gray-600" disabled={isLoading}>
-          <PaperclipIcon className="w-4 h-4" />
+        
+        <button onClick={() => fileInputRef.current?.click()} className="flex-shrink-0 p-2 rounded-full hover:bg-gray-700 text-gray-400 disabled:text-gray-600" disabled={isLoading}>
+          <PaperclipIcon className="w-5 h-5" />
         </button>
-        <button onClick={handleSend} className="p-2 rounded-full bg-cyan-600 text-white hover:bg-cyan-700 disabled:bg-gray-600" disabled={isLoading || (!input.trim() && !attachedFile)}>
-          <SendIcon className="w-4 h-4" />
+        
+        <button onClick={handleSend} className="flex-shrink-0 p-2 rounded-full bg-cyan-600 text-white hover:bg-cyan-700 disabled:bg-gray-600" disabled={isLoading || (!input.trim() && !attachedFile)}>
+          <SendIcon className="w-5 h-5" />
         </button>
       </div>
     </div>
