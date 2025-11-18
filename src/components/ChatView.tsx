@@ -47,6 +47,21 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 1500);
   };
+
+  const handleDownloadDocx = async (text: string) => {
+    try {
+      const url = await createDocxFromText(text);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `TechTouch-Doc-${Date.now()}.docx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error creating DOCX:', error);
+    }
+  };
   
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -99,7 +114,6 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
       
       addSystemMessage('تمت المعالجة. جاري إنشاء ملف Word قابل للتعديل...');
       
-      // Default to .docx for better editing capability as requested
       let downloadUrl: string;
       let downloadType: 'docx' | 'txt' = 'docx';
 
@@ -204,9 +218,14 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
         {messages.map((msg) => (
           <div key={msg.id} className={`flex items-start group ${msg.sender === 'user' ? 'justify-end' : msg.sender === 'system' ? 'justify-center' : 'justify-start'}`}>
             {msg.sender === 'ai' && msg.text && (
-              <button onClick={() => handleCopy(msg.text, msg.id)} className="flex-shrink-0 p-1 mt-0.5 mr-1 text-gray-500 hover:text-gray-200 transition-colors rounded-full">
-                 <CopyIcon className="w-4 h-4" />
-              </button>
+              <div className="flex flex-col mt-0.5 mr-1 space-y-1">
+                <button onClick={() => handleCopy(msg.text, msg.id)} className="flex-shrink-0 p-1.5 text-gray-500 hover:text-white transition-colors rounded-full bg-gray-800/50 hover:bg-gray-700" title="نسخ">
+                   <CopyIcon className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => handleDownloadDocx(msg.text)} className="flex-shrink-0 p-1.5 text-gray-500 hover:text-cyan-400 transition-colors rounded-full bg-gray-800/50 hover:bg-gray-700" title="تحميل كملف Word">
+                   <FileIcon className="w-3.5 h-3.5" />
+                </button>
+              </div>
             )}
              <div className={`max-w-[90%] rounded-lg px-3 py-2 relative ${
                 msg.sender === 'user' ? 'bg-cyan-800' : 
@@ -260,12 +279,12 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
       <div className="p-1 bg-gray-800 border-t border-gray-700 flex items-center gap-1">
         
         {recognition && (
-          <button onClick={toggleRecording} className={`flex-shrink-0 p-2 rounded-full hover:bg-gray-700 text-gray-400 disabled:text-gray-600 ${isRecording ? 'text-red-500 animate-pulse' : ''}`} disabled={isLoading}>
+          <button onClick={toggleRecording} className={`flex-shrink-0 p-1.5 rounded-full hover:bg-gray-700 text-gray-400 disabled:text-gray-600 ${isRecording ? 'text-red-500 animate-pulse' : ''}`} disabled={isLoading}>
             <MicrophoneIcon className="w-5 h-5" />
           </button>
         )}
         
-        <button onClick={() => fileInputRef.current?.click()} className="flex-shrink-0 p-2 rounded-full hover:bg-gray-700 text-gray-400 disabled:text-gray-600" disabled={isLoading}>
+        <button onClick={() => fileInputRef.current?.click()} className="flex-shrink-0 p-1.5 rounded-full hover:bg-gray-700 text-gray-400 disabled:text-gray-600" disabled={isLoading}>
           <PaperclipIcon className="w-5 h-5" />
         </button>
 
@@ -275,12 +294,12 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
             onChange={(e) => setInput(e.target.value)} 
             onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSend()} 
             placeholder={ attachedFile ? "تعليق..." : "اكتب..."} 
-            className="flex-1 min-w-0 bg-gray-700 text-gray-200 border border-gray-600 rounded-full px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-500 text-sm" 
+            className="flex-1 min-w-0 bg-gray-700 text-gray-200 border border-gray-600 rounded-full px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-cyan-500 text-xs sm:text-sm" 
             disabled={isLoading} 
         />
         <input type="file" accept="image/*,application/pdf,.docx" ref={fileInputRef} onChange={handleFileChange} className="hidden" disabled={isLoading} />
         
-        <button onClick={handleSend} className="flex-shrink-0 p-2 rounded-full bg-cyan-600 text-white hover:bg-cyan-700 disabled:bg-gray-600" disabled={isLoading || (!input.trim() && !attachedFile)}>
+        <button onClick={handleSend} className="flex-shrink-0 p-1.5 rounded-full bg-cyan-600 text-white hover:bg-cyan-700 disabled:bg-gray-600" disabled={isLoading || (!input.trim() && !attachedFile)}>
           <SendIcon className="w-5 h-5" />
         </button>
       </div>

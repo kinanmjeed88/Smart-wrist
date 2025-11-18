@@ -122,7 +122,7 @@ export const PersonalInfoView: React.FC<PersonalInfoViewProps> = ({ messages, se
 
       <div className="p-1 bg-gray-800 border-t border-gray-700 flex items-center gap-1">
         {recognition && (
-          <button onClick={toggleRecording} className={`flex-shrink-0 p-2 rounded-full hover:bg-gray-700 text-gray-400 disabled:text-gray-600 ${isRecording ? 'text-red-500 animate-pulse' : ''}`} disabled={isLoading}>
+          <button onClick={toggleRecording} className={`flex-shrink-0 p-1.5 rounded-full hover:bg-gray-700 text-gray-400 disabled:text-gray-600 ${isRecording ? 'text-red-500 animate-pulse' : ''}`} disabled={isLoading}>
             <MicrophoneIcon className="w-5 h-5" />
           </button>
         )}
@@ -131,13 +131,13 @@ export const PersonalInfoView: React.FC<PersonalInfoViewProps> = ({ messages, se
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSend()}
-          placeholder="اسأل عن معلوماتي..."
-          className="flex-1 min-w-0 bg-gray-700 text-gray-200 border border-gray-600 rounded-full px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-500 text-sm"
+          placeholder="اسأل..."
+          className="flex-1 min-w-0 bg-gray-700 text-gray-200 border border-gray-600 rounded-full px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-cyan-500 text-xs sm:text-sm"
           disabled={isLoading}
         />
         <button
           onClick={handleSend}
-          className="flex-shrink-0 p-2 rounded-full bg-cyan-600 text-white hover:bg-cyan-700 disabled:bg-gray-600"
+          className="flex-shrink-0 p-1.5 rounded-full bg-cyan-600 text-white hover:bg-cyan-700 disabled:bg-gray-600"
           disabled={isLoading || !input.trim()}
         >
           <SendIcon className="w-5 h-5" />
