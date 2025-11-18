@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { generateContentStream } from '../services/geminiService';
-import { extractTextFromFile, createPdfFromText, createTxtFromText } from '../services/documentProcessor';
+import { extractTextFromFile, createPdfFromText, createTxtFromText, createDocxFromText } from '../services/documentProcessor';
 import { ChatMessage } from '../types';
 import { PaperclipIcon, SendIcon, FileIcon, DownloadIcon, CopyIcon, MicrophoneIcon } from './Icons';
 import { MarkdownRenderer } from './MarkdownRenderer';
@@ -88,8 +88,8 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
          return;
       }
 
-      addSystemMessage('تم استخراج النص. جاري الترجمة...');
-      const translationPrompt = `Translate the following text to Arabic, line by line. Each original line should be followed by its Arabic translation on the next line.\n\n${extractedText}`;
+      addSystemMessage('تم استخراج النص. جاري المعالجة...');
+      const translationPrompt = `قم بتحسين وتنسيق النص التالي باللغة العربية، وإذا كان بلغة أخرى قم بترجمته للعربية بدقة عالية:\n\n${extractedText}`;
       
       const stream = generateContentStream(translationPrompt);
       let translatedText = '';
@@ -97,21 +97,25 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
         translatedText += chunk;
       }
       
-      addSystemMessage('تمت الترجمة. جاري إنشاء الملف الجديد...');
+      addSystemMessage('تمت المعالجة. جاري إنشاء ملف Word قابل للتعديل...');
       
-      let downloadUrl: string, downloadType: 'pdf' | 'txt' = 'txt';
-      if (file.type === 'application/pdf') {
-        downloadUrl = await createPdfFromText(translatedText);
-        downloadType = 'pdf';
-      } else {
+      // Default to .docx for better editing capability as requested
+      let downloadUrl: string;
+      let downloadType: 'docx' | 'txt' = 'docx';
+
+      try {
+        downloadUrl = await createDocxFromText(translatedText);
+      } catch (e) {
+        console.warn("Failed to create DOCX, falling back to TXT", e);
         downloadUrl = createTxtFromText(translatedText);
+        downloadType = 'txt';
       }
       
       const aiMessage: ChatMessage = {
         id: Date.now().toString(),
         sender: 'ai',
-        text: `تمت ترجمة ملفك "${file.name}". يمكنك تحميله الآن.`,
-        downloadLink: { url: downloadUrl, filename: `translated-${file.name}.${downloadType}`, type: downloadType }
+        text: `تم معالجة ملفك "${file.name}". يمكنك تحميله الآن بصيغة Word.`,
+        downloadLink: { url: downloadUrl, filename: `converted-${file.name.split('.')[0]}.${downloadType}`, type: downloadType }
       };
       setMessages((prev) => [...prev, aiMessage]);
 
@@ -204,7 +208,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
                  <CopyIcon className="w-4 h-4" />
               </button>
             )}
-             <div className={`max-w-[80%] rounded-lg px-2 py-1 relative ${
+             <div className={`max-w-[90%] rounded-lg px-3 py-2 relative ${
                 msg.sender === 'user' ? 'bg-cyan-800' : 
                 msg.sender === 'system' ? 'bg-gray-600 text-gray-300 text-center text-[10px]' : 
                 'bg-gray-700'
@@ -218,9 +222,9 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
               )}
                {msg.sender === 'ai' ? <MarkdownRenderer text={msg.text} /> : <p className="whitespace-pre-wrap">{msg.text}</p>}
               {msg.downloadLink && (
-                  <a href={msg.downloadLink.url} download={msg.downloadLink.filename} className="mt-2 flex items-center justify-center space-x-2 space-x-reverse bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-1 px-3 rounded-md transition-colors duration-300">
+                  <a href={msg.downloadLink.url} download={msg.downloadLink.filename} className="mt-3 flex items-center justify-center space-x-2 space-x-reverse bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-3 rounded-md transition-colors duration-300 w-full">
                     <DownloadIcon className="w-4 h-4" />
-                    <span>تحميل</span>
+                    <span>تحميل {msg.downloadLink.type === 'docx' ? 'Word' : 'الملف'}</span>
                   </a>
               )}
               {copiedId === msg.id && <div className="absolute -top-5 right-0 text-white bg-black/50 px-1 rounded text-[9px]">تم النسخ!</div>}
@@ -252,18 +256,8 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
         </div>
       )}
 
-      {/* Compact Input Bar for Small Screens */}
-      <div className="p-1.5 bg-gray-800 border-t border-gray-700 flex items-center gap-1">
-        <input 
-            type="text" 
-            value={input} 
-            onChange={(e) => setInput(e.target.value)} 
-            onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSend()} 
-            placeholder={ attachedFile ? "اكتب تعليقاً..." : "رسالة..."} 
-            className="flex-1 min-w-0 bg-gray-700 text-gray-200 border border-gray-600 rounded-full px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-500 text-sm" 
-            disabled={isLoading} 
-        />
-        <input type="file" accept="image/*,application/pdf,.docx" ref={fileInputRef} onChange={handleFileChange} className="hidden" disabled={isLoading} />
+      {/* Optimized Input Bar for Very Small Screens */}
+      <div className="p-1 bg-gray-800 border-t border-gray-700 flex items-center gap-1">
         
         {recognition && (
           <button onClick={toggleRecording} className={`flex-shrink-0 p-2 rounded-full hover:bg-gray-700 text-gray-400 disabled:text-gray-600 ${isRecording ? 'text-red-500 animate-pulse' : ''}`} disabled={isLoading}>
@@ -274,6 +268,17 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
         <button onClick={() => fileInputRef.current?.click()} className="flex-shrink-0 p-2 rounded-full hover:bg-gray-700 text-gray-400 disabled:text-gray-600" disabled={isLoading}>
           <PaperclipIcon className="w-5 h-5" />
         </button>
+
+        <input 
+            type="text" 
+            value={input} 
+            onChange={(e) => setInput(e.target.value)} 
+            onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSend()} 
+            placeholder={ attachedFile ? "تعليق..." : "اكتب..."} 
+            className="flex-1 min-w-0 bg-gray-700 text-gray-200 border border-gray-600 rounded-full px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-500 text-sm" 
+            disabled={isLoading} 
+        />
+        <input type="file" accept="image/*,application/pdf,.docx" ref={fileInputRef} onChange={handleFileChange} className="hidden" disabled={isLoading} />
         
         <button onClick={handleSend} className="flex-shrink-0 p-2 rounded-full bg-cyan-600 text-white hover:bg-cyan-700 disabled:bg-gray-600" disabled={isLoading || (!input.trim() && !attachedFile)}>
           <SendIcon className="w-5 h-5" />

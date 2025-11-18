@@ -120,7 +120,12 @@ export const PersonalInfoView: React.FC<PersonalInfoViewProps> = ({ messages, se
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-1.5 bg-gray-800 border-t border-gray-700 flex items-center gap-1">
+      <div className="p-1 bg-gray-800 border-t border-gray-700 flex items-center gap-1">
+        {recognition && (
+          <button onClick={toggleRecording} className={`flex-shrink-0 p-2 rounded-full hover:bg-gray-700 text-gray-400 disabled:text-gray-600 ${isRecording ? 'text-red-500 animate-pulse' : ''}`} disabled={isLoading}>
+            <MicrophoneIcon className="w-5 h-5" />
+          </button>
+        )}
         <input
           type="text"
           value={input}
@@ -130,11 +135,6 @@ export const PersonalInfoView: React.FC<PersonalInfoViewProps> = ({ messages, se
           className="flex-1 min-w-0 bg-gray-700 text-gray-200 border border-gray-600 rounded-full px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-500 text-sm"
           disabled={isLoading}
         />
-        {recognition && (
-          <button onClick={toggleRecording} className={`flex-shrink-0 p-2 rounded-full hover:bg-gray-700 text-gray-400 disabled:text-gray-600 ${isRecording ? 'text-red-500 animate-pulse' : ''}`} disabled={isLoading}>
-            <MicrophoneIcon className="w-5 h-5" />
-          </button>
-        )}
         <button
           onClick={handleSend}
           className="flex-shrink-0 p-2 rounded-full bg-cyan-600 text-white hover:bg-cyan-700 disabled:bg-gray-600"

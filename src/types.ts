@@ -17,7 +17,7 @@ export interface ChatMessage {
   downloadLink?: {
     url: string;
     filename: string;
-    type: 'pdf' | 'txt';
+    type: 'pdf' | 'txt' | 'docx';
   };
   structuredData?: PersonalInfoItem[];
 }
