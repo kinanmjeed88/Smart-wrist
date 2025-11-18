@@ -34,7 +34,7 @@ const App: React.FC = () => {
   const handleLogout = () => {
     localStorage.removeItem('gemini_api_key');
     setHasApiKey(false);
-    setChatMessages([]); // Optional: clear chat on logout
+    setChatMessages([]);
   };
 
   if (!hasApiKey) {
@@ -42,8 +42,8 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="h-screen w-screen bg-gray-900 text-gray-200 flex flex-col font-sans text-sm">
-      <header className="flex-shrink-0 bg-gray-800 p-2 flex justify-between items-center border-b border-gray-700">
+    <div className="h-screen h-dvh w-screen bg-gray-900 text-gray-200 flex flex-col font-sans text-sm overflow-hidden">
+      <header className="flex-shrink-0 bg-gray-800 p-2 flex justify-between items-center border-b border-gray-700 h-12 z-10">
         <div className="flex items-center space-x-2 space-x-reverse">
           <img src={profileImage} alt="Profile" className="w-8 h-8 rounded-full" />
           <div>
@@ -56,13 +56,13 @@ const App: React.FC = () => {
         </button>
       </header>
 
-      <main className="flex-1 overflow-hidden relative">
+      <main className="flex-1 overflow-hidden relative w-full">
         {view === 'aiNews' && <AiNewsView />}
         {view === 'chat' && <ChatView messages={chatMessages} setMessages={setChatMessages} />}
         {view === 'personalInfo' && <PersonalInfoView messages={infoMessages} setMessages={setInfoMessages} />}
       </main>
 
-      <footer className="flex-shrink-0 bg-gray-800 p-1 flex justify-around items-center border-t border-gray-700">
+      <footer className="flex-shrink-0 bg-gray-800 p-1 flex justify-around items-center border-t border-gray-700 h-14 safe-area-pb">
         <button
           onClick={() => setView('aiNews')}
           className={`p-2 rounded-full transition-colors ${view === 'aiNews' ? 'bg-cyan-600 text-white' : 'text-gray-400 hover:bg-gray-700'}`}
