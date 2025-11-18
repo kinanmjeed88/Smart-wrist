@@ -1,4 +1,4 @@
-herename: Build and Deploy to GitHub Pages (with Yarn)
+name: Build and Deploy to GitHub Pages (with Yarn)
 
 on:
   push:
