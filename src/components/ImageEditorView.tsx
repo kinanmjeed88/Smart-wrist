@@ -29,48 +29,6 @@ export const ImageEditorView: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Helper to resize image to avoid API payload limits
-  const resizeImage = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.src = URL.createObjectURL(file);
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        // Significantly reduced max dimension to 512px to aggressively save tokens and avoid 429 quota errors
-        const maxDim = 512; 
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > maxDim) {
-            height = Math.round((height * maxDim) / width);
-            width = maxDim;
-          }
-        } else {
-          if (height > maxDim) {
-            width = Math.round((width * maxDim) / height);
-            height = maxDim;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-            reject(new Error("Failed to get canvas context"));
-            return;
-        }
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        // Compress to JPEG 50% quality to minimize payload size
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
-        resolve(dataUrl.split(',')[1]);
-      };
-      img.onerror = (e) => reject(e);
-    });
-  };
-
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -115,19 +73,19 @@ export const ImageEditorView: React.FC = () => {
     const finalPrompt = promptParts.join('. ') + ". Ensure high quality, photorealistic result.";
     
     try {
-      // Resize image before sending
-      const base64Data = await resizeImage(selectedImage);
-      // We send as image/jpeg because resizeImage converts it to jpeg
-      const resultBase64 = await generateEditedImage(finalPrompt, base64Data, 'image/jpeg');
+      // Remove data:image/png;base64, prefix
+      const base64Data = imagePreview.split(',')[1];
+      const mimeType = selectedImage.type;
+
+      const resultBase64 = await generateEditedImage(finalPrompt, base64Data, mimeType);
       
       if (resultBase64) {
         setGeneratedImage(`data:image/png;base64,${resultBase64}`);
       } else {
-        alert('فشل في توليد الصورة. لم يرجع النموذج أي بيانات.');
+        alert('فشل في توليد الصورة. حاول مرة أخرى.');
       }
-    } catch (error: any) {
-      console.error(error);
-      alert(error.message || 'حدث خطأ أثناء المعالجة. تأكد من مفتاح API.');
+    } catch (error) {
+      alert('حدث خطأ أثناء المعالجة.');
     } finally {
       setIsLoading(false);
     }
