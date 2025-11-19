@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { generateContentStream } from '../services/geminiService';
 import { extractTextFromFile, createPdfFromText, createTxtFromText, createDocxFromText } from '../services/documentProcessor';
@@ -17,6 +18,8 @@ if (recognition) {
 interface ChatViewProps {
   messages: ChatMessage[];
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
+  onScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
+  onInputFocus?: (focused: boolean) => void;
 }
 
 const fileToBase64 = (file: File): Promise<string> =>
@@ -27,7 +30,7 @@ const fileToBase64 = (file: File): Promise<string> =>
     reader.onerror = (error) => reject(error);
   });
 
-export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => {
+export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages, onScroll, onInputFocus }) => {
   const [input, setInput] = useState('');
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
@@ -213,8 +216,9 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-900">
-      <div className="flex-1 overflow-y-auto p-2 space-y-3">
+    <div className="h-full flex flex-col bg-gray-900 relative">
+      {/* Messages Area - Padding bottom to account for floating footer + input */}
+      <div className="flex-1 overflow-y-auto p-2 space-y-2 pb-24" onScroll={onScroll}>
         {messages.map((msg) => (
           <div key={msg.id} className={`flex items-start group ${msg.sender === 'user' ? 'justify-end' : msg.sender === 'system' ? 'justify-center' : 'justify-start'}`}>
             {msg.sender === 'ai' && msg.text && (
@@ -227,36 +231,37 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
                 </button>
               </div>
             )}
-             <div className={`max-w-[90%] rounded-lg px-3 py-2 relative ${
-                msg.sender === 'user' ? 'bg-cyan-800' : 
-                msg.sender === 'system' ? 'bg-gray-600 text-gray-300 text-center text-[10px]' : 
-                'bg-gray-700'
+            {/* Compact Bubble Styles: Reduced padding, increased max-width */}
+             <div className={`max-w-[95%] sm:max-w-[85%] rounded-2xl px-3 py-2 relative shadow-sm ${
+                msg.sender === 'user' ? 'bg-cyan-700 rounded-br-sm' : 
+                msg.sender === 'system' ? 'bg-gray-600 text-gray-300 text-center text-[10px] py-1' : 
+                'bg-gray-800 rounded-bl-sm'
             }`}>
-              {msg.imagePreview && <img src={msg.imagePreview} alt="preview" className="rounded-md max-h-32 mb-1" />}
+              {msg.imagePreview && <img src={msg.imagePreview} alt="preview" className="rounded-lg max-h-32 mb-1 object-cover" />}
               {msg.fileInfo && (
-                <div className="flex items-center space-x-2 space-x-reverse p-1 bg-gray-800/50 rounded-md mb-1">
-                  <FileIcon className="w-5 h-5 text-gray-300"/>
+                <div className="flex items-center space-x-2 space-x-reverse p-1.5 bg-gray-900/40 rounded-md mb-1">
+                  <FileIcon className="w-4 h-4 text-gray-300"/>
                   <span className="text-gray-300 truncate text-xs">{msg.fileInfo.name}</span>
                 </div>
               )}
-               {msg.sender === 'ai' ? <MarkdownRenderer text={msg.text} /> : <p className="whitespace-pre-wrap">{msg.text}</p>}
+               {msg.sender === 'ai' ? <MarkdownRenderer text={msg.text} /> : <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.text}</p>}
               {msg.downloadLink && (
-                  <a href={msg.downloadLink.url} download={msg.downloadLink.filename} className="mt-3 flex items-center justify-center space-x-2 space-x-reverse bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-3 rounded-md transition-colors duration-300 w-full">
+                  <a href={msg.downloadLink.url} download={msg.downloadLink.filename} className="mt-2 flex items-center justify-center space-x-2 space-x-reverse bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-1.5 px-3 rounded-lg transition-colors duration-300 w-full text-xs">
                     <DownloadIcon className="w-4 h-4" />
                     <span>تحميل {msg.downloadLink.type === 'docx' ? 'Word' : 'الملف'}</span>
                   </a>
               )}
-              {copiedId === msg.id && <div className="absolute -top-5 right-0 text-white bg-black/50 px-1 rounded text-[9px]">تم النسخ!</div>}
+              {copiedId === msg.id && <div className="absolute -top-6 right-0 text-white bg-black/70 px-2 py-0.5 rounded-md text-[10px] animate-fade-in-up">تم النسخ!</div>}
             </div>
           </div>
         ))}
         {isLoading && (
              <div className="flex justify-start">
-                <div className="max-w-[80%] rounded-lg px-2 py-1 bg-gray-700">
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                        <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse"></div>
-                        <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse delay-75"></div>
-                        <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse delay-150"></div>
+                <div className="rounded-2xl rounded-bl-sm px-4 py-2 bg-gray-800 shadow-sm">
+                    <div className="flex items-center space-x-1.5 space-x-reverse">
+                        <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce"></div>
+                        <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce delay-75"></div>
+                        <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce delay-150"></div>
                     </div>
                 </div>
             </div>
@@ -264,27 +269,28 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
         <div ref={messagesEndRef} />
       </div>
       
+      {/* Preview Area */}
       { (filePreview || (attachedFile && !attachedFile.type.startsWith('image/'))) && (
-        <div className="p-2 bg-gray-800 border-t border-b border-gray-700">
-            <div className="relative w-24 p-1 bg-gray-700 rounded-md">
-                {filePreview ? <img src={filePreview} alt="Selected" className="h-20 w-20 object-cover rounded mx-auto" /> : (
-                    <div className="flex flex-col items-center text-gray-300"> <FileIcon className="w-10 h-10" /> <span className="text-xs truncate w-full text-center mt-1">{attachedFile?.name}</span> </div>
+        <div className="p-2 bg-gray-900/95 backdrop-blur border-t border-gray-800 absolute bottom-14 left-0 right-0 z-20">
+            <div className="relative w-20 p-1 bg-gray-800 rounded-lg border border-gray-700">
+                {filePreview ? <img src={filePreview} alt="Selected" className="h-16 w-16 object-cover rounded mx-auto" /> : (
+                    <div className="flex flex-col items-center text-gray-300 py-1"> <FileIcon className="w-8 h-8" /> <span className="text-[10px] truncate w-full text-center mt-1">{attachedFile?.name}</span> </div>
                 )}
-                <button onClick={resetInput} className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full h-4 w-4 flex items-center justify-center text-xs"> &times; </button>
+                <button onClick={resetInput} className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs shadow-md"> &times; </button>
             </div>
         </div>
       )}
 
-      {/* Optimized Input Bar for Very Small Screens */}
-      <div className="p-1 bg-gray-800 border-t border-gray-700 flex items-center gap-1">
+      {/* Input Bar - Sticky Bottom above Floating Footer (or replaces it when focused) */}
+      <div className="p-2 bg-gray-900/95 backdrop-blur-md border-t border-gray-800 flex items-center gap-2 z-40 absolute bottom-0 left-0 right-0 safe-area-pb">
         
         {recognition && (
-          <button onClick={toggleRecording} className={`flex-shrink-0 p-1.5 rounded-full hover:bg-gray-700 text-gray-400 disabled:text-gray-600 ${isRecording ? 'text-red-500 animate-pulse' : ''}`} disabled={isLoading}>
+          <button onClick={toggleRecording} className={`flex-shrink-0 p-2 rounded-full bg-gray-800 hover:bg-gray-700 text-gray-400 disabled:text-gray-600 transition-all ${isRecording ? 'text-red-500 bg-red-500/10 ring-1 ring-red-500' : ''}`} disabled={isLoading}>
             <MicrophoneIcon className="w-5 h-5" />
           </button>
         )}
         
-        <button onClick={() => fileInputRef.current?.click()} className="flex-shrink-0 p-1.5 rounded-full hover:bg-gray-700 text-gray-400 disabled:text-gray-600" disabled={isLoading}>
+        <button onClick={() => fileInputRef.current?.click()} className="flex-shrink-0 p-2 rounded-full bg-gray-800 hover:bg-gray-700 text-gray-400 disabled:text-gray-600 transition-all" disabled={isLoading}>
           <PaperclipIcon className="w-5 h-5" />
         </button>
 
@@ -293,13 +299,15 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages }) => 
             value={input} 
             onChange={(e) => setInput(e.target.value)} 
             onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSend()} 
-            placeholder={ attachedFile ? "تعليق..." : "اكتب..."} 
-            className="flex-1 min-w-0 bg-gray-700 text-gray-200 border border-gray-600 rounded-full px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-cyan-500 text-xs sm:text-sm" 
+            onFocus={() => onInputFocus && onInputFocus(true)}
+            onBlur={() => onInputFocus && onInputFocus(false)}
+            placeholder={ attachedFile ? "تعليق..." : "اكتب رسالتك..."} 
+            className="flex-1 min-w-0 bg-gray-800 text-gray-100 border border-gray-700 rounded-full px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 text-sm transition-shadow placeholder-gray-500" 
             disabled={isLoading} 
         />
         <input type="file" accept="image/*,application/pdf,.docx" ref={fileInputRef} onChange={handleFileChange} className="hidden" disabled={isLoading} />
         
-        <button onClick={handleSend} className="flex-shrink-0 p-1.5 rounded-full bg-cyan-600 text-white hover:bg-cyan-700 disabled:bg-gray-600" disabled={isLoading || (!input.trim() && !attachedFile)}>
+        <button onClick={handleSend} className="flex-shrink-0 p-2.5 rounded-full bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transform active:scale-95 transition-all" disabled={isLoading || (!input.trim() && !attachedFile)}>
           <SendIcon className="w-5 h-5" />
         </button>
       </div>

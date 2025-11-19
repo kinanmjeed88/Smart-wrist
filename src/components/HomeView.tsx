@@ -4,13 +4,14 @@ import { SparklesIcon, NewsIcon, InfoIcon, ArrowRightIcon } from './Icons';
 
 interface HomeViewProps {
   setView: (view: 'chat' | 'aiNews' | 'personalInfo') => void;
+  onScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
 }
 
-export const HomeView: React.FC<HomeViewProps> = ({ setView }) => {
+export const HomeView: React.FC<HomeViewProps> = ({ setView, onScroll }) => {
   return (
-    <div className="h-full flex flex-col p-4 overflow-y-auto animate-in fade-in duration-500">
+    <div className="h-full flex flex-col p-4 overflow-y-auto animate-in fade-in duration-500 pb-24" onScroll={onScroll}>
       
-      <div className="mb-6 text-center mt-2">
+      <div className="mb-6 text-center mt-4">
         <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-1">
           أهلاً بك في TechTouch
         </h2>

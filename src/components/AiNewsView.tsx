@@ -3,8 +3,12 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getAiNews } from '../services/geminiService';
 import { NewsItem } from '../types';
 
+interface AiNewsViewProps {
+    onScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
+}
+
 const NewsCardSkeleton: React.FC = () => (
-    <div className="bg-gray-800 p-3 rounded-lg animate-pulse mb-3">
+    <div className="bg-gray-800 p-4 rounded-xl animate-pulse mb-4 border border-gray-700/50">
         <div className="h-4 bg-gray-700 rounded w-3/4 mb-3"></div>
         <div className="h-3 bg-gray-700 rounded w-full mb-1.5"></div>
         <div className="h-3 bg-gray-700 rounded w-full mb-1.5"></div>
@@ -12,17 +16,15 @@ const NewsCardSkeleton: React.FC = () => (
         <div className="flex justify-between items-center">
             <div className="h-6 bg-gray-700 rounded w-20"></div>
             <div className="h-6 bg-gray-700 rounded w-20"></div>
-            <div className="h-6 bg-gray-700 rounded w-20"></div>
         </div>
     </div>
 );
 
-
-export const AiNewsView: React.FC = () => {
+export const AiNewsView: React.FC<AiNewsViewProps> = ({ onScroll }) => {
     const [news, setNews] = useState<NewsItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
+    const [selectedNewsItem, setSelectedNewsItem] = useState<NewsItem | null>(null);
     const fetchCalled = useRef(false);
 
     const fetchNews = useCallback(async () => {
@@ -32,7 +34,6 @@ export const AiNewsView: React.FC = () => {
         try {
             setIsLoading(true);
             setError(null);
-            
             const newsItems = await getAiNews();
             setNews(newsItems);
         } catch (err) {
@@ -48,7 +49,6 @@ export const AiNewsView: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        // Only fetch if we haven't already populated the list (cache-like behavior for this session)
         if (news.length === 0) {
             fetchNews();
         } else {
@@ -56,7 +56,6 @@ export const AiNewsView: React.FC = () => {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-
 
     const handleShare = async (item: NewsItem) => {
         const shareData = {
@@ -76,17 +75,13 @@ export const AiNewsView: React.FC = () => {
         }
     };
     
-    const toggleExpand = (title: string) => {
-        setExpandedCardId(prevId => (prevId === title ? null : title));
-    };
-
     if (error && news.length === 0) {
         return (
             <div className="h-full flex flex-col items-center justify-center p-4 text-center">
                 <p className="text-red-400 mb-4">{error}</p>
                 <button
                     onClick={() => { fetchCalled.current = false; fetchNews(); }}
-                    className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-3 rounded-md transition-colors text-sm"
+                    className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-6 rounded-full transition-colors text-sm shadow-lg"
                     aria-label="إعادة محاولة جلب الأخبار"
                 >
                     إعادة المحاولة
@@ -96,33 +91,67 @@ export const AiNewsView: React.FC = () => {
     }
 
     return (
-        <div className="h-full overflow-y-auto p-2 space-y-3 pb-20">
-            {news.map((item, index) => (
-                <div key={index} className="bg-gray-800 p-3 rounded-lg shadow-md transition-all duration-500 animate-in fade-in slide-in-from-bottom-4">
-                    <h3 className="font-bold text-cyan-400 text-sm mb-2">{item.title}</h3>
-                    <p className={`text-gray-300 text-xs mb-3 transition-all duration-300 ease-in-out ${expandedCardId === item.title ? 'line-clamp-none' : 'line-clamp-5'}`}>
-                        {expandedCardId === item.title ? item.details : item.summary}
-                    </p>
-                    <div className="border-t border-gray-700 pt-2 flex justify-between items-center text-[10px] space-x-2 space-x-reverse">
-                         <a href={item.link} target="_blank" rel="noopener noreferrer" className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-1 px-2 rounded-md transition-colors">
-                            استخدام الأداة
-                        </a>
-                         <button onClick={() => toggleExpand(item.title)} className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-1 px-2 rounded-md transition-colors">
-                            {expandedCardId === item.title ? 'إخفاء التفاصيل' : 'تفاصيل أكثر'}
-                        </button>
-                         <button onClick={() => handleShare(item)} className="bg-gray-600 hover:bg-gray-500 text-white font-bold py-1 px-2 rounded-md transition-colors">
-                            مشاركة
-                        </button>
+        <>
+            <div className="h-full overflow-y-auto p-4 pb-24 space-y-4" onScroll={onScroll}>
+                {news.map((item, index) => (
+                    <div key={index} className="bg-gray-800 border border-gray-700/50 p-4 rounded-xl shadow-lg active:scale-[0.98] transition-all duration-200" onClick={() => setSelectedNewsItem(item)}>
+                        <h3 className="font-bold text-cyan-400 text-sm mb-2 leading-snug">{item.title}</h3>
+                        <p className="text-gray-300 text-xs mb-3 line-clamp-3 leading-relaxed">
+                            {item.summary}
+                        </p>
+                        <div className="flex justify-between items-center pt-2 border-t border-gray-700/50">
+                             <span className="text-[10px] text-gray-500">اضغط للتفاصيل</span>
+                             <div className="flex gap-2">
+                                 <button onClick={(e) => { e.stopPropagation(); handleShare(item); }} className="p-1.5 rounded-full bg-gray-700 text-gray-300 hover:text-white">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                                      <path d="M13 4.5a2.5 2.5 0 11.702 1.737L6.97 9.604a2.518 2.518 0 010 .792l6.733 3.367a2.5 2.5 0 11-.671 1.34l-6.733-3.367a2.5 2.5 0 110-3.475l6.733-3.366A2.52 2.52 0 0113 4.5z" />
+                                    </svg>
+                                </button>
+                             </div>
+                        </div>
+                    </div>
+                ))}
+                {isLoading && (
+                    <>
+                        <NewsCardSkeleton />
+                        <NewsCardSkeleton />
+                        <div className="text-center text-gray-500 text-[10px] animate-pulse mt-4">جاري جلب آخر الأخبار التقنية...</div>
+                    </>
+                )}
+            </div>
+
+            {/* Bottom Sheet for Details */}
+            {selectedNewsItem && (
+                <div className="fixed inset-0 z-[60] flex items-end justify-center" role="dialog" aria-modal="true">
+                    {/* Backdrop */}
+                    <div 
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300" 
+                        onClick={() => setSelectedNewsItem(null)}
+                    />
+                    
+                    {/* Sheet Content */}
+                    <div className="bg-gray-800 w-full max-w-lg rounded-t-3xl p-6 shadow-2xl transform transition-transform duration-300 ease-out translate-y-0 relative border-t border-gray-700 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom">
+                       <div className="w-12 h-1.5 bg-gray-600 rounded-full mx-auto mb-6 opacity-50"></div>
+                       
+                       <h2 className="text-lg font-bold text-white mb-4 leading-tight">{selectedNewsItem.title}</h2>
+                       
+                       <div className="prose prose-invert prose-sm max-w-none text-gray-300 text-sm leading-relaxed mb-6">
+                           <p className="mb-4">{selectedNewsItem.summary}</p>
+                           <hr className="border-gray-700 my-4"/>
+                           <p>{selectedNewsItem.details}</p>
+                       </div>
+
+                       <div className="flex gap-3 mt-auto sticky bottom-0 bg-gray-800 pt-4">
+                           <a href={selectedNewsItem.link} target="_blank" rel="noopener noreferrer" className="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-bold py-3 px-4 rounded-xl text-center text-sm shadow-lg transition-transform hover:scale-[1.02]">
+                                قراءة المصدر / الأداة
+                           </a>
+                           <button onClick={() => setSelectedNewsItem(null)} className="bg-gray-700 hover:bg-gray-600 text-gray-300 font-bold py-3 px-6 rounded-xl text-sm transition-colors">
+                                إغلاق
+                           </button>
+                       </div>
                     </div>
                 </div>
-            ))}
-            {isLoading && (
-                <>
-                    <NewsCardSkeleton />
-                    <NewsCardSkeleton />
-                    <div className="text-center text-gray-500 text-[10px] animate-pulse">جاري جلب آخر الأخبار التقنية...</div>
-                </>
             )}
-        </div>
+        </>
     );
 };
