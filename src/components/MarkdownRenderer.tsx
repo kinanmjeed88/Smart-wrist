@@ -1,6 +1,8 @@
 
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
+// @ts-ignore
+import remarkGfm from 'remark-gfm';
 
 interface MarkdownRendererProps {
   text: string;
@@ -10,6 +12,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ text }) => {
   return (
     <div className="markdown-content text-gray-100 text-sm">
       <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
         components={{
           a: ({ node, ...props }) => (
             <a {...props} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline break-all font-medium" />

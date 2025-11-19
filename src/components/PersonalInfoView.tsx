@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatMessage } from '../types';
 import { PERSONAL_DATA_STRUCTURED } from '../constants';
@@ -52,7 +53,7 @@ export const PersonalInfoView: React.FC<PersonalInfoViewProps> = ({ messages, se
     setIsLoading(true);
 
     const fullPrompt = `${PERSONAL_INFO_PROMPT} "${userInput}"`;
-    // FIX: Pass false for useSearch parameter to align with function signature (prompt, image, useSearch, overrideSystemInstruction)
+    // Pass false for useSearch to align with function signature
     const aiResponseText = await generateContent(fullPrompt, undefined, false, "You are a helpful assistant answering questions based only on provided data.");
 
     const aiMessage: ChatMessage = {
