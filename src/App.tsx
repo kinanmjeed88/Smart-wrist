@@ -11,9 +11,7 @@ import { SparklesIcon, NewsIcon, LogoutIcon, HomeIcon, CompareIcon, PhoneIcon, I
 import { ChatMessage, View } from './types';
 import { ApiKeyModal } from './components/ApiKeyModal';
 import { Toaster } from 'react-hot-toast';
-
-// Professional TechTouch Logo (Geometric/Tech style)
-const profileImage = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ibG9nb0dyYWQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMDZTRkQ3IiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMzQjgyRjYiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB4PSIwIiB5PSIwIiB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzExMTgyNyIgLz4KICA8Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0NSIgc3Ryb2tlPSJ1cmwoI2xvZ29HcmFkKSIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIiBzdHJva2UtZGFzaGFycmF5PSIyODAgNDAiIHRyYW5zZm9ybT0icm90YXRlKDQ1IDUwIDUwKSIgLz4KICA8IS0tIFRlY2ggVCBzaGFwZSAtLT4KICA8cGF0aCBkPSJNMzAgMzVINTAgVjcwIiBzdHJva2U9InVybCgjbG9nb0dyYWQpIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgLz4KICA8cGF0aCBkPSJNNTAgMzVINzAiIHN0cm9rZT0idXJsKCNsb2dvR3JhZCkiIHN0cm9rZS13aWR0aD0iOCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiAvPgogIDwhLS0gQ2lyY3VpdCBkb3RzIC0tPgogIDxjaXJjbGUgY3g9IjMwIiBjeT0iMzUiIHI9IjQiIGZpbGw9IiMzQjgyRjYiIC8+CiAgPGNpcmNsZSBjeD0iNzAiIGN5PSIzNSIgcj0iNCIgZmlsbD0iIzA2Q0ZENyIgLz4KICA8Y2lyY2xlIGN4PSI1MCIgY3k9IjcwIiByPSI0IiBmaWxsPSIjMDZTRkQ3IiAvPgo8L3N2Zz4=";
+import { APP_LOGO } from './constants';
 
 const App: React.FC = () => {
   const [view, setView] = useState<View>('home');
@@ -58,7 +56,7 @@ const App: React.FC = () => {
       
       <header className="flex-shrink-0 bg-gray-800/80 backdrop-blur-md p-3 flex justify-between items-center border-b border-gray-700 z-20 shadow-md">
         <div className="flex items-center space-x-3 space-x-reverse cursor-pointer" onClick={() => setView('home')}>
-          <img src={profileImage} alt="Logo" className="w-9 h-9 rounded-full border border-gray-600 p-0.5 bg-gray-800" />
+          <img src={APP_LOGO} alt="Logo" className="w-9 h-9 rounded-full border border-gray-600 p-0.5 bg-gray-800" />
           <div className="flex flex-col">
             <h1 className="font-bold text-sm text-white tracking-wide">TechTouch AI</h1>
             <div className="flex items-center gap-1">

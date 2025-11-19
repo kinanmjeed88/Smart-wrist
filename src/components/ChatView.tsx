@@ -221,11 +221,11 @@ _لمقارنة الهواتف، يرجى استخدام زر "المقارنة"
 
   return (
     <div className="h-full flex flex-col bg-gray-900 relative text-xs">
-      {/* Top Bar with Clear Button */}
-      <div className="absolute top-0 right-0 p-2 z-10">
+      {/* Top Bar with Clear Button - Moved to LEFT side */}
+      <div className="absolute top-0 left-0 p-2 z-10">
         <button 
             onClick={handleClearChat}
-            className="bg-red-500/20 hover:bg-red-500/40 text-red-400 p-2 rounded-full backdrop-blur-md transition-colors"
+            className="bg-red-500/20 hover:bg-red-500/40 text-red-400 p-2 rounded-full backdrop-blur-md transition-colors shadow-md"
             title="حذف المحادثة بالكامل"
         >
             <TrashIcon className="w-4 h-4" />

@@ -7,6 +7,7 @@ import {
   FacebookIcon, 
   InstagramIcon 
 } from './Icons';
+import { APP_LOGO } from '../constants';
 
 export const AboutView: React.FC = () => {
   const socialLinks = [
@@ -45,8 +46,8 @@ export const AboutView: React.FC = () => {
   return (
     <div className="h-full overflow-y-auto p-6 flex flex-col items-center animate-in fade-in">
       <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 p-1 mb-6 shadow-2xl">
-         <div className="w-full h-full rounded-full bg-gray-900 flex items-center justify-center">
-            <span className="text-3xl">👨‍💻</span>
+         <div className="w-full h-full rounded-full bg-gray-900 flex items-center justify-center p-1">
+            <img src={APP_LOGO} alt="TechTouch Logo" className="w-full h-full object-contain rounded-full" />
          </div>
       </div>
 

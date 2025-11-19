@@ -26,6 +26,7 @@ export const PhoneNewsView: React.FC<PhoneNewsViewProps> = ({ onScroll }) => {
     const [visibleCount, setVisibleCount] = useState(3);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [expandedPhoneIndex, setExpandedPhoneIndex] = useState<number | null>(null);
     const fetchCalled = useRef(false);
 
     useEffect(() => {
@@ -82,15 +83,19 @@ export const PhoneNewsView: React.FC<PhoneNewsViewProps> = ({ onScroll }) => {
         toast.success(`تم نسخ: ${name}`);
     };
 
+    const toggleExpand = (index: number) => {
+        setExpandedPhoneIndex(expandedPhoneIndex === index ? null : index);
+    };
+
     const getSpecIcon = (text: string) => {
         const lowerText = text.toLowerCase();
-        if (lowerText.includes('mah') || lowerText.includes('battery') || lowerText.includes('بطارية')) return <BatteryIcon className="w-3 h-3 text-green-400" />;
-        if (lowerText.includes('mp') || lowerText.includes('camera') || lowerText.includes('كاميرا')) return <CameraIcon className="w-3 h-3 text-blue-400" />;
-        if (lowerText.includes('inch') || lowerText.includes('oled') || lowerText.includes('lcd') || lowerText.includes('display') || lowerText.includes('شاشة')) return <ScreenIcon className="w-3 h-3 text-yellow-400" />;
-        if (lowerText.includes('snapdragon') || lowerText.includes('bionic') || lowerText.includes('dimensity') || lowerText.includes('processor') || lowerText.includes('معالج')) return <CpuIcon className="w-3 h-3 text-red-400" />;
-        if (lowerText.includes('ram') || lowerText.includes('gb ram') || lowerText.includes('رام')) return <RamIcon className="w-3 h-3 text-purple-400" />;
-        if (lowerText.includes('storage') || lowerText.includes('tb') || lowerText.includes('gb') || lowerText.includes('ذاكرة')) return <StorageIcon className="w-3 h-3 text-cyan-400" />;
-        return <div className="w-1 h-1 bg-indigo-500 rounded-full flex-shrink-0"></div>; // Default dot
+        if (lowerText.includes('mah') || lowerText.includes('battery') || lowerText.includes('بطارية')) return <BatteryIcon className="w-3.5 h-3.5 text-green-400" />;
+        if (lowerText.includes('mp') || lowerText.includes('camera') || lowerText.includes('كاميرا')) return <CameraIcon className="w-3.5 h-3.5 text-blue-400" />;
+        if (lowerText.includes('inch') || lowerText.includes('oled') || lowerText.includes('lcd') || lowerText.includes('display') || lowerText.includes('شاشة')) return <ScreenIcon className="w-3.5 h-3.5 text-yellow-400" />;
+        if (lowerText.includes('snapdragon') || lowerText.includes('bionic') || lowerText.includes('dimensity') || lowerText.includes('processor') || lowerText.includes('معالج')) return <CpuIcon className="w-3.5 h-3.5 text-red-400" />;
+        if (lowerText.includes('ram') || lowerText.includes('gb ram') || lowerText.includes('رام')) return <RamIcon className="w-3.5 h-3.5 text-purple-400" />;
+        if (lowerText.includes('storage') || lowerText.includes('tb') || lowerText.includes('gb') || lowerText.includes('ذاكرة')) return <StorageIcon className="w-3.5 h-3.5 text-cyan-400" />;
+        return <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full flex-shrink-0"></div>; 
     };
 
     return (
@@ -129,35 +134,61 @@ export const PhoneNewsView: React.FC<PhoneNewsViewProps> = ({ onScroll }) => {
                         <h3 className="font-bold text-white text-sm leading-snug">{phone.modelName}</h3>
                         <button 
                             onClick={() => handleCopyName(phone.modelName)}
-                            className="text-gray-500 hover:text-indigo-400 p-1 rounded-md hover:bg-gray-700"
+                            className="text-gray-400 hover:text-white p-1.5 rounded-lg bg-gray-700/50 hover:bg-indigo-600 transition-colors"
                             title="نسخ اسم الهاتف"
                         >
                             <CopyIcon className="w-4 h-4" />
                         </button>
                     </div>
                     
-                    <p className="text-gray-400 text-xs mb-3 italic border-b border-gray-700 pb-2 leading-relaxed">
+                    <p className="text-gray-400 text-xs mb-3 border-b border-gray-700 pb-2 leading-relaxed">
                         {phone.summary}
                     </p>
 
-                    <div className="bg-gray-900/50 rounded-lg p-3">
-                        <h4 className="text-[10px] text-indigo-400 font-bold mb-2 uppercase tracking-wide">المواصفات الرئيسية:</h4>
-                        <ul className="grid grid-cols-2 gap-2">
-                            {phone.specs.map((spec, i) => (
-                                <li key={i} className="text-[10px] text-gray-300 flex items-center gap-1.5">
-                                    {getSpecIcon(spec)}
-                                    {spec}
-                                </li>
+                    {/* Collapsed View Preview */}
+                    {expandedPhoneIndex !== index && (
+                         <div className="flex gap-2 overflow-hidden pb-2">
+                            {phone.specs.slice(0, 3).map((spec, i) => (
+                                <span key={i} className="text-[9px] bg-gray-900 text-gray-400 px-2 py-1 rounded-full whitespace-nowrap truncate border border-gray-700">
+                                   {spec}
+                                </span>
                             ))}
-                        </ul>
-                    </div>
+                            <span className="text-[9px] text-gray-500 self-center">...</span>
+                         </div>
+                    )}
+
+                    {/* Expanded Detailed Specs */}
+                    {expandedPhoneIndex === index && (
+                        <div className="bg-gray-900/50 rounded-xl p-3 border border-gray-700/50 animate-in slide-in-from-top-2">
+                            <h4 className="text-[10px] text-indigo-400 font-bold mb-3 uppercase tracking-wide border-b border-indigo-500/20 pb-1 w-fit">
+                                المواصفات التفصيلية:
+                            </h4>
+                            <ul className="space-y-2">
+                                {phone.specs.map((spec, i) => (
+                                    <li key={i} className="text-[10px] text-gray-200 flex items-start gap-2 bg-gray-800/80 p-1.5 rounded-lg">
+                                        <div className="mt-0.5 p-1 bg-gray-900 rounded-md border border-gray-700">
+                                           {getSpecIcon(spec)}
+                                        </div>
+                                        <span className="mt-0.5 leading-snug">{spec}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    <button 
+                        onClick={() => toggleExpand(index)}
+                        className="mt-3 w-full text-center text-[10px] text-indigo-300 hover:text-white hover:bg-indigo-600/20 py-1.5 rounded-lg transition-colors border border-dashed border-indigo-500/30"
+                    >
+                        {expandedPhoneIndex === index ? 'إخفاء التفاصيل' : 'تفاصيل أكثر ▾'}
+                    </button>
                 </div>
             ))}
 
             {visibleCount < phones.length && (
                 <button 
                     onClick={handleShowMore} 
-                    className="w-full py-3 text-center text-indigo-400 text-xs font-bold bg-gray-800 hover:bg-gray-700 rounded-xl transition-colors"
+                    className="w-full py-3 text-center text-indigo-400 text-xs font-bold bg-gray-800 hover:bg-gray-700 rounded-xl transition-colors border border-gray-700 shadow-md"
                 >
                     عرض المزيد ({phones.length - visibleCount})
                 </button>
