@@ -23,6 +23,7 @@ const NewsCardSkeleton: React.FC = () => (
 
 export const AiNewsView: React.FC<AiNewsViewProps> = ({ onScroll }) => {
     const [news, setNews] = useState<NewsItem[]>([]);
+    const [visibleCount, setVisibleCount] = useState(3);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [selectedNewsItem, setSelectedNewsItem] = useState<NewsItem | null>(null);
@@ -40,7 +41,6 @@ export const AiNewsView: React.FC<AiNewsViewProps> = ({ onScroll }) => {
         } else {
             fetchNews();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchNews = useCallback(async () => {
@@ -66,9 +66,16 @@ export const AiNewsView: React.FC<AiNewsViewProps> = ({ onScroll }) => {
     }, []);
 
     const clearCache = () => {
-        localStorage.removeItem('ai_news_cache');
-        setNews([]);
-        fetchNews();
+        if (window.confirm('هل تريد حذف النتائج المحفوظة؟')) {
+            localStorage.removeItem('ai_news_cache');
+            setNews([]);
+            setVisibleCount(3);
+            fetchNews();
+        }
+    };
+
+    const handleShowMore = () => {
+        setVisibleCount(prev => prev + 3);
     };
 
     const handleShare = async (item: NewsItem) => {
@@ -116,7 +123,7 @@ export const AiNewsView: React.FC<AiNewsViewProps> = ({ onScroll }) => {
                     </div>
                 )}
 
-                {news.map((item, index) => (
+                {news.slice(0, visibleCount).map((item, index) => (
                     <div key={index} className="bg-gray-800 border border-gray-700/50 p-4 rounded-xl shadow-lg active:scale-[0.98] transition-all duration-200" onClick={() => setSelectedNewsItem(item)}>
                         <h3 className="font-bold text-cyan-400 text-sm mb-2 leading-snug">{item.title}</h3>
                         <p className="text-gray-300 text-xs mb-3 line-clamp-3 leading-relaxed">
@@ -134,9 +141,18 @@ export const AiNewsView: React.FC<AiNewsViewProps> = ({ onScroll }) => {
                         </div>
                     </div>
                 ))}
+
+                {visibleCount < news.length && (
+                    <button 
+                        onClick={handleShowMore} 
+                        className="w-full py-3 text-center text-cyan-400 text-xs font-bold bg-gray-800 hover:bg-gray-700 rounded-xl transition-colors"
+                    >
+                        عرض المزيد ({news.length - visibleCount})
+                    </button>
+                )}
+
                 {isLoading && (
                     <>
-                        <NewsCardSkeleton />
                         <NewsCardSkeleton />
                         <div className="text-center text-gray-500 text-[10px] animate-pulse mt-4">جاري جلب آخر الأخبار التقنية...</div>
                     </>

@@ -37,4 +37,4 @@ export interface PhoneNewsItem {
   releaseDate?: string;
 }
 
-export type View = 'home' | 'aiNews' | 'phoneNews' | 'chat' | 'personalInfo' | 'comparison';
+export type View = 'home' | 'aiNews' | 'phoneNews' | 'chat' | 'personalInfo' | 'comparison' | 'about';

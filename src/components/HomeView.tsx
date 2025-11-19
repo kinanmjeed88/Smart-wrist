@@ -114,9 +114,12 @@ export const HomeView: React.FC<HomeViewProps> = ({ setView, onScroll }) => {
       </div>
       
       <div className="mt-auto pt-4 text-center">
-         <div className="inline-block px-3 py-1 rounded-full bg-gray-800/80 border border-gray-700 text-[10px] text-gray-500">
+         <button 
+           onClick={() => setView('about')}
+           className="inline-block px-4 py-1.5 rounded-full bg-gray-800/80 border border-gray-700 text-[10px] text-gray-500 hover:text-cyan-400 hover:border-cyan-500/50 transition-all cursor-pointer"
+         >
            V 2.5 by Kinan Majeed
-         </div>
+         </button>
       </div>
     </div>
   );

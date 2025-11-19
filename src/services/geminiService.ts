@@ -1,7 +1,7 @@
 
 import { GoogleGenAI, GenerateContentResponse, Type, Modality } from "@google/genai";
 import { SYSTEM_PROMPT } from '../constants';
-import { NewsItem, PhoneNewsItem } from "../types";
+import { NewsItem, PhoneNewsItem, ChatMessage } from "../types";
 
 interface TextPart {
   text: string;
@@ -16,10 +16,6 @@ type Part = TextPart | ImagePart;
 
 const getApiKey = (): string => {
   return localStorage.getItem('gemini-api-key') || process.env.API_KEY || '';
-};
-
-const getUserMemory = (): string => {
-    return localStorage.getItem('user_memory') || '';
 };
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -70,15 +66,13 @@ export const generateContent = async (
     if (!apiKey) throw new Error("مفتاح API غير موجود.");
     
     const ai = new GoogleGenAI({ apiKey });
-    const userMemory = getUserMemory();
 
     const parts: Part[] = [{ text: prompt }];
     if (image) {
       parts.unshift(image);
     }
 
-    const finalSystemInstruction = overrideSystemInstruction || 
-        `${SYSTEM_PROMPT}\n\nمعلومات عن المستخدم (الذاكرة المحلية): ${userMemory || "لا توجد معلومات محفوظة بعد."}\nاستخدم هذه المعلومات لتخصيص الإجابة.`;
+    const finalSystemInstruction = overrideSystemInstruction || SYSTEM_PROMPT;
 
     const config: any = {
         systemInstruction: finalSystemInstruction,
@@ -100,6 +94,7 @@ export const generateContent = async (
 
 export async function* generateContentStream(
   prompt: string,
+  history: ChatMessage[] = [], 
   image?: ImagePart,
   useSearch: boolean = false
 ): AsyncGenerator<string> {
@@ -110,15 +105,26 @@ export async function* generateContentStream(
         return;
     }
     const ai = new GoogleGenAI({ apiKey });
-    const userMemory = getUserMemory();
     
-    const parts: Part[] = [{ text: prompt }];
-    if (image) {
-      parts.unshift(image);
-    }
+    // Construct Full History if provided
+    const contents: any[] = history
+      .filter(msg => msg.sender === 'user' || msg.sender === 'ai')
+      .map(msg => ({
+        role: msg.sender === 'user' ? 'user' : 'model',
+        parts: [{ text: msg.text }]
+      }));
+      
+    // Add current prompt
+    const currentParts: Part[] = [{ text: prompt }];
+    if (image) currentParts.unshift(image);
+    
+    contents.push({
+        role: 'user',
+        parts: currentParts as any
+    });
 
     const config: any = {
-        systemInstruction: `${SYSTEM_PROMPT}\n\nسياق المستخدم: ${userMemory}`,
+        systemInstruction: `${SYSTEM_PROMPT}\n\nImportant: You are part of a continuous conversation. Use the provided history to maintain context.`,
     };
 
     if (useSearch) {
@@ -127,7 +133,7 @@ export async function* generateContentStream(
 
     const responseStream = await ai.models.generateContentStream({
         model: 'gemini-2.5-flash',
-        contents: { parts },
+        contents: contents,
         config: config
     });
 
@@ -146,15 +152,13 @@ export const getAiNews = async (): Promise<NewsItem[]> => {
 
     const ai = new GoogleGenAI({ apiKey });
     
-    // STRICT PROMPT FOR OFFICIAL LINKS ONLY with fallback
-    const prompt = `You are a strict AI tech news analyst. Provide 6 recent AI news items (last 48h).
+    const prompt = `You are a strict AI tech news analyst. Provide 9 recent AI news items (last 48h).
     
     CRITICAL LINK RULES:
     1. The 'link' field MUST be a working URL.
     2. FIRST PRIORITY: The OFFICIAL HOMEPAGE of the tool (e.g., https://openai.com).
     3. SECOND PRIORITY: The OFFICIAL blog post announcement.
     4. ABSOLUTE FALLBACK: If you are not 100% verified on the specific URL, you MUST return a Google Search URL in this format: "https://www.google.com/search?q=ToolName+AI".
-    5. DO NOT return 404 links or guessed paths like 'tool.com/new-feature'. Use the root domain or search link instead.
     
     Return JSON array. Language: Arabic. Fields: title, summary, link, details.`;
 
@@ -192,10 +196,10 @@ export const getPhoneNews = async (): Promise<PhoneNewsItem[]> => {
 
     const ai = new GoogleGenAI({ apiKey });
     
-    const prompt = `List exactly 10 recent smartphones released or announced in the last few months.
+    const prompt = `List exactly 9 recent smartphones released or announced in the last few months.
     For each phone, provide:
-    1. Model Name (e.g., Samsung S24 Ultra).
-    2. A list of 4-5 key specifications (short bullet points like 'Snapdragon 8 Gen 3', '5000mAh', '200MP Camera').
+    1. Model Name.
+    2. A list of 4-5 key specifications (short bullet points like 'Snapdragon 8 Gen 3', '5000mAh', '200MP Camera', '6.8 inch AMOLED').
     3. A brief summary in Arabic.
     
     Return strictly JSON array.`;

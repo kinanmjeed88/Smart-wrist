@@ -36,7 +36,8 @@ export const ComparisonView: React.FC = () => {
       
       Start directly with the table.`;
 
-      const stream = generateContentStream(prompt, undefined, true);
+      // Fix: Pass empty array for history, undefined for image, true for useSearch
+      const stream = generateContentStream(prompt, [], undefined, true);
       
       for await (const chunk of stream) {
         setResult(prev => prev + chunk);

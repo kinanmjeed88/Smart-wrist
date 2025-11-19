@@ -6,6 +6,7 @@ import { AiNewsView } from './components/AiNewsView';
 import { PhoneNewsView } from './components/PhoneNewsView';
 import { HomeView } from './components/HomeView';
 import { ComparisonView } from './components/ComparisonView';
+import { AboutView } from './components/AboutView';
 import { SparklesIcon, NewsIcon, LogoutIcon, HomeIcon, CompareIcon, PhoneIcon, InfoIcon } from './components/Icons';
 import { ChatMessage, View } from './types';
 import { ApiKeyModal } from './components/ApiKeyModal';
@@ -94,9 +95,10 @@ const App: React.FC = () => {
         {view === 'chat' && <ChatView messages={chatMessages} setMessages={setChatMessages} />}
         {view === 'personalInfo' && <PersonalInfoView messages={infoMessages} setMessages={setInfoMessages} />}
         {view === 'comparison' && <ComparisonView />}
+        {view === 'about' && <AboutView />}
       </main>
       
-       {view !== 'home' && (
+       {view !== 'home' && view !== 'about' && (
            <nav className="flex-shrink-0 bg-gray-800 border-t border-gray-700 p-1 flex justify-around items-center z-20">
                <NavButton active={view === 'chat'} onClick={() => setView('chat')} icon={<SparklesIcon className="w-5 h-5" />} label="Chat" />
                <NavButton active={view === 'aiNews'} onClick={() => setView('aiNews')} icon={<NewsIcon className="w-5 h-5" />} label="AI News" />
@@ -109,13 +111,24 @@ const App: React.FC = () => {
   );
 };
 
-const NavButton: React.FC<{ active: boolean; onClick: () => void; icon: React.ReactNode; label: string }> = ({ active, onClick, icon, label }) => (
+interface NavButtonProps {
+    active: boolean;
+    onClick: () => void;
+    icon: React.ReactNode;
+    label: string;
+}
+
+const NavButton: React.FC<NavButtonProps> = ({ active, onClick, icon, label }) => (
     <button
         onClick={onClick}
-        className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-200 w-14 ${active ? 'text-cyan-400 bg-gray-700/50' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-700/30'}`}
+        className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-300 ${
+            active ? 'text-cyan-400 bg-gray-700/50 scale-110' : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800'
+        }`}
     >
         {icon}
-        <span className="text-[9px] mt-0.5 font-medium">{label}</span>
+        <span className={`text-[9px] mt-1 font-medium ${active ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
+            {label}
+        </span>
     </button>
 );
 

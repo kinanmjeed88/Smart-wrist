@@ -1,10 +1,11 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { generateContent, generateContentStream } from '../services/geminiService';
-import { extractTextFromFile, createDocxFromText, createTxtFromText } from '../services/documentProcessor';
+import { extractTextFromFile, createDocxFromText } from '../services/documentProcessor';
 import { ChatMessage } from '../types';
-import { PaperclipIcon, SendIcon, FileIcon, DownloadIcon, CopyIcon, MicrophoneIcon } from './Icons';
+import { PaperclipIcon, SendIcon, FileIcon, DownloadIcon, CopyIcon, MicrophoneIcon, TrashIcon } from './Icons';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import toast from 'react-hot-toast';
 
 // Web Speech API
 const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -42,7 +43,6 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages, onScr
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Updated Welcome Message
   useEffect(() => {
     if (messages.length === 0) {
         setMessages([{
@@ -66,21 +66,18 @@ _لمقارنة الهواتف، يرجى استخدام زر "المقارنة"
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
-  const updateMemory = (text: string) => {
-    const currentMemory = localStorage.getItem('user_memory') || '';
-    const lowerText = text.toLowerCase();
-    
-    if (lowerText.includes('اسمي') || lowerText.includes('أحب') || lowerText.includes('أفضل') || lowerText.includes('my name is') || lowerText.includes('i like')) {
-       const newMemory = currentMemory + '\n' + text;
-       const trimmedMemory = newMemory.split('\n').slice(-10).join('\n'); 
-       localStorage.setItem('user_memory', trimmedMemory);
-    }
-  };
-
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 1500);
+  };
+
+  const handleClearChat = () => {
+      if(window.confirm("هل أنت متأكد من رغبتك في حذف المحادثة بالكامل والبدء من جديد؟")) {
+          setMessages([]); 
+          localStorage.removeItem('user_memory'); // Clear simple memory if any
+          toast.success("تم حذف المحادثة بنجاح");
+      }
   };
 
   const handleDownloadDocx = async (text: string) => {
@@ -150,9 +147,8 @@ _لمقارنة الهواتف، يرجى استخدام زر "المقارنة"
               useSearch = true;
           }
 
-          updateMemory(originalPrompt);
-
-          const stream = generateContentStream(finalPrompt, imagePart, useSearch);
+          // Pass full messages history for context
+          const stream = generateContentStream(finalPrompt, messages, imagePart, useSearch);
           let fullResponse = '';
           for await (const chunk of stream) {
               fullResponse += chunk;
@@ -225,8 +221,19 @@ _لمقارنة الهواتف، يرجى استخدام زر "المقارنة"
 
   return (
     <div className="h-full flex flex-col bg-gray-900 relative text-xs">
+      {/* Top Bar with Clear Button */}
+      <div className="absolute top-0 right-0 p-2 z-10">
+        <button 
+            onClick={handleClearChat}
+            className="bg-red-500/20 hover:bg-red-500/40 text-red-400 p-2 rounded-full backdrop-blur-md transition-colors"
+            title="حذف المحادثة بالكامل"
+        >
+            <TrashIcon className="w-4 h-4" />
+        </button>
+      </div>
+
       {/* Messages List */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-4 pb-28" onScroll={onScroll}>
+      <div className="flex-1 overflow-y-auto p-2 space-y-4 pb-28 pt-8" onScroll={onScroll}>
         {messages.map((msg) => (
           <div key={msg.id} className={`flex items-start group ${msg.sender === 'user' ? 'justify-end' : msg.sender === 'system' ? 'justify-center' : 'justify-start'}`}>
             {msg.sender === 'ai' && msg.text && (
