@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { SparklesIcon, NewsIcon, InfoIcon, ArrowRightIcon, CompareIcon } from './Icons';
+import { SparklesIcon, NewsIcon, InfoIcon, ArrowRightIcon, CompareIcon, PhoneIcon } from './Icons';
 import { View } from '../types';
 
 interface HomeViewProps {
@@ -39,7 +39,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ setView, onScroll }) => {
           </div>
         </button>
 
-         {/* Comparison Card (New) */}
+         {/* Comparison Card */}
          <button
           onClick={() => setView('comparison')}
           className="group relative overflow-hidden rounded-2xl bg-gray-800/50 backdrop-blur-sm border border-gray-700 hover:border-orange-500/50 transition-all duration-300 p-4 text-right w-full shadow-lg hover:shadow-orange-500/10"
@@ -54,6 +54,24 @@ export const HomeView: React.FC<HomeViewProps> = ({ setView, onScroll }) => {
                 <p className="text-[10px] text-gray-400 mt-0.5">مقارنات دقيقة ومحدثة</p>
              </div>
              <ArrowRightIcon className="w-4 h-4 text-gray-500 group-hover:text-orange-400 transform group-hover:-translate-x-1 transition-all" />
+          </div>
+        </button>
+
+        {/* Phone News Card (NEW) */}
+        <button
+          onClick={() => setView('phoneNews')}
+          className="group relative overflow-hidden rounded-2xl bg-gray-800/50 backdrop-blur-sm border border-gray-700 hover:border-indigo-500/50 transition-all duration-300 p-4 text-right w-full shadow-lg hover:shadow-indigo-500/10"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="flex items-center justify-between relative z-10">
+             <div className="bg-indigo-500/20 p-3 rounded-xl">
+                <PhoneIcon className="w-5 h-5 text-indigo-400" />
+             </div>
+             <div className="flex-1 mr-3">
+                <h3 className="text-base font-bold text-gray-100">أخبار الهواتف</h3>
+                <p className="text-[10px] text-gray-400 mt-0.5">آخر الإصدارات والمواصفات</p>
+             </div>
+             <ArrowRightIcon className="w-4 h-4 text-gray-500 group-hover:text-indigo-400 transform group-hover:-translate-x-1 transition-all" />
           </div>
         </button>
 
@@ -97,7 +115,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ setView, onScroll }) => {
       
       <div className="mt-auto pt-4 text-center">
          <div className="inline-block px-3 py-1 rounded-full bg-gray-800/80 border border-gray-700 text-[10px] text-gray-500">
-           V 2.3 by Kinan Majeed
+           V 2.5 by Kinan Majeed
          </div>
       </div>
     </div>

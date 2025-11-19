@@ -1,7 +1,7 @@
 
 import { GoogleGenAI, GenerateContentResponse, Type, Modality } from "@google/genai";
 import { SYSTEM_PROMPT } from '../constants';
-import { NewsItem } from "../types";
+import { NewsItem, PhoneNewsItem } from "../types";
 
 interface TextPart {
   text: string;
@@ -146,14 +146,15 @@ export const getAiNews = async (): Promise<NewsItem[]> => {
 
     const ai = new GoogleGenAI({ apiKey });
     
-    // STRICT PROMPT FOR OFFICIAL LINKS
+    // STRICT PROMPT FOR OFFICIAL LINKS ONLY with fallback
     const prompt = `You are a strict AI tech news analyst. Provide 6 recent AI news items (last 48h).
     
-    RULES FOR LINKS:
-    1. The 'link' MUST be the OFFICIAL HOMEPAGE of the tool or the OFFICIAL research paper/blog post from the company (e.g., OpenAI, Google, Anthropic).
-    2. DO NOT provide links to generic news aggregators unless necessary.
-    3. VERIFY the link exists. If you cannot find the official tool link, provide a Google Search URL query for it (e.g., "https://www.google.com/search?q=ToolName+Official+Site").
-    4. DO NOT invent paths that result in 404 errors.
+    CRITICAL LINK RULES:
+    1. The 'link' field MUST be a working URL.
+    2. FIRST PRIORITY: The OFFICIAL HOMEPAGE of the tool (e.g., https://openai.com).
+    3. SECOND PRIORITY: The OFFICIAL blog post announcement.
+    4. ABSOLUTE FALLBACK: If you are not 100% verified on the specific URL, you MUST return a Google Search URL in this format: "https://www.google.com/search?q=ToolName+AI".
+    5. DO NOT return 404 links or guessed paths like 'tool.com/new-feature'. Use the root domain or search link instead.
     
     Return JSON array. Language: Arabic. Fields: title, summary, link, details.`;
 
@@ -181,6 +182,48 @@ export const getAiNews = async (): Promise<NewsItem[]> => {
     const text = response.text;
     if (!text) return [];
     return JSON.parse(text) as NewsItem[];
+  }, 3, 1500);
+};
+
+export const getPhoneNews = async (): Promise<PhoneNewsItem[]> => {
+  return retryOperation(async () => {
+    const apiKey = getApiKey();
+    if (!apiKey) throw new Error("مفتاح API مفقود");
+
+    const ai = new GoogleGenAI({ apiKey });
+    
+    const prompt = `List exactly 10 recent smartphones released or announced in the last few months.
+    For each phone, provide:
+    1. Model Name (e.g., Samsung S24 Ultra).
+    2. A list of 4-5 key specifications (short bullet points like 'Snapdragon 8 Gen 3', '5000mAh', '200MP Camera').
+    3. A brief summary in Arabic.
+    
+    Return strictly JSON array.`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              modelName: { type: Type.STRING },
+              specs: { type: Type.ARRAY, items: { type: Type.STRING } },
+              summary: { type: Type.STRING },
+              releaseDate: { type: Type.STRING }
+            },
+            required: ["modelName", "specs", "summary"]
+          }
+        }
+      }
+    });
+
+    const text = response.text;
+    if (!text) return [];
+    return JSON.parse(text) as PhoneNewsItem[];
   }, 3, 1500);
 };
 

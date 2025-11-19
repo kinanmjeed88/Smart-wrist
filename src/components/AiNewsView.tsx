@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getAiNews } from '../services/geminiService';
 import { NewsItem } from '../types';
+import { TrashIcon } from './Icons';
 
 interface AiNewsViewProps {
     onScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
@@ -22,10 +23,25 @@ const NewsCardSkeleton: React.FC = () => (
 
 export const AiNewsView: React.FC<AiNewsViewProps> = ({ onScroll }) => {
     const [news, setNews] = useState<NewsItem[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [selectedNewsItem, setSelectedNewsItem] = useState<NewsItem | null>(null);
     const fetchCalled = useRef(false);
+
+    // Load from cache on mount
+    useEffect(() => {
+        const cached = localStorage.getItem('ai_news_cache');
+        if (cached) {
+            try {
+                setNews(JSON.parse(cached));
+            } catch (e) {
+                console.error("Cache error", e);
+            }
+        } else {
+            fetchNews();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const fetchNews = useCallback(async () => {
         if (fetchCalled.current) return;
@@ -36,6 +52,7 @@ export const AiNewsView: React.FC<AiNewsViewProps> = ({ onScroll }) => {
             setError(null);
             const newsItems = await getAiNews();
             setNews(newsItems);
+            localStorage.setItem('ai_news_cache', JSON.stringify(newsItems));
         } catch (err) {
             if (err instanceof Error) {
                 setError(err.message);
@@ -48,14 +65,11 @@ export const AiNewsView: React.FC<AiNewsViewProps> = ({ onScroll }) => {
         }
     }, []);
 
-    useEffect(() => {
-        if (news.length === 0) {
-            fetchNews();
-        } else {
-            setIsLoading(false);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    const clearCache = () => {
+        localStorage.removeItem('ai_news_cache');
+        setNews([]);
+        fetchNews();
+    };
 
     const handleShare = async (item: NewsItem) => {
         const shareData = {
@@ -75,24 +89,33 @@ export const AiNewsView: React.FC<AiNewsViewProps> = ({ onScroll }) => {
         }
     };
     
-    if (error && news.length === 0) {
-        return (
-            <div className="h-full flex flex-col items-center justify-center p-4 text-center">
-                <p className="text-red-400 mb-4">{error}</p>
-                <button
-                    onClick={() => { fetchCalled.current = false; fetchNews(); }}
-                    className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-6 rounded-full transition-colors text-sm shadow-lg"
-                    aria-label="إعادة محاولة جلب الأخبار"
-                >
-                    إعادة المحاولة
-                </button>
-            </div>
-        );
-    }
-
     return (
         <>
             <div className="h-full overflow-y-auto p-4 pb-24 space-y-4" onScroll={onScroll}>
+                
+                <div className="flex justify-between items-center mb-2">
+                    <h2 className="text-cyan-400 font-bold text-sm">آخر أخبار AI</h2>
+                    <button 
+                        onClick={clearCache}
+                        className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-full transition-colors"
+                        title="حذف النتائج وتحديث"
+                    >
+                        <TrashIcon className="w-4 h-4" />
+                    </button>
+                </div>
+
+                {error && news.length === 0 && (
+                     <div className="flex flex-col items-center justify-center p-4 text-center">
+                        <p className="text-red-400 mb-4">{error}</p>
+                        <button
+                            onClick={() => { fetchCalled.current = false; fetchNews(); }}
+                            className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-6 rounded-full transition-colors text-sm shadow-lg"
+                        >
+                            إعادة المحاولة
+                        </button>
+                    </div>
+                )}
+
                 {news.map((item, index) => (
                     <div key={index} className="bg-gray-800 border border-gray-700/50 p-4 rounded-xl shadow-lg active:scale-[0.98] transition-all duration-200" onClick={() => setSelectedNewsItem(item)}>
                         <h3 className="font-bold text-cyan-400 text-sm mb-2 leading-snug">{item.title}</h3>
@@ -123,13 +146,10 @@ export const AiNewsView: React.FC<AiNewsViewProps> = ({ onScroll }) => {
             {/* Bottom Sheet for Details */}
             {selectedNewsItem && (
                 <div className="fixed inset-0 z-[60] flex items-end justify-center" role="dialog" aria-modal="true">
-                    {/* Backdrop */}
                     <div 
                         className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300" 
                         onClick={() => setSelectedNewsItem(null)}
                     />
-                    
-                    {/* Sheet Content */}
                     <div className="bg-gray-800 w-full max-w-lg rounded-t-3xl p-6 shadow-2xl transform transition-transform duration-300 ease-out translate-y-0 relative border-t border-gray-700 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom">
                        <div className="w-12 h-1.5 bg-gray-600 rounded-full mx-auto mb-6 opacity-50"></div>
                        
@@ -143,7 +163,7 @@ export const AiNewsView: React.FC<AiNewsViewProps> = ({ onScroll }) => {
 
                        <div className="flex gap-3 mt-auto sticky bottom-0 bg-gray-800 pt-4">
                            <a href={selectedNewsItem.link} target="_blank" rel="noopener noreferrer" className="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-bold py-3 px-4 rounded-xl text-center text-sm shadow-lg transition-transform hover:scale-[1.02]">
-                                قراءة المصدر / الأداة
+                                زيارة الموقع الرسمي
                            </a>
                            <button onClick={() => setSelectedNewsItem(null)} className="bg-gray-700 hover:bg-gray-600 text-gray-300 font-bold py-3 px-6 rounded-xl text-sm transition-colors">
                                 إغلاق

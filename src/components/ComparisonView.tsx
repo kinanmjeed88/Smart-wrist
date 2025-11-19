@@ -27,12 +27,12 @@ export const ComparisonView: React.FC = () => {
       const prompt = `Create a comprehensive technical comparison table between: "${device1}" and "${device2}".
       
       Requirements:
-      1. Use strictly OFFICIAL sources for specifications (GSMArena, Official Manufacturer Sites).
+      1. **SOURCE TRUTH**: Use strictly OFFICIAL manufacturer data (e.g., Apple, Samsung, Xiaomi official sites) or highly trusted reviewers (GSMArena).
       2. Format the output as a Markdown Table.
       3. Columns: Feature | ${device1} | ${device2}
-      4. Rows to include: Processor, RAM, Storage, Camera, Battery, Display, OS, Price (Approx).
+      4. Rows to include: Processor, RAM, Storage, Camera, Battery, Charging, Display, Build Quality, OS, Price (Approx).
       5. Language: Arabic.
-      6. Add a brief "Winner" verdict at the end based on specs.
+      6. **VERDICT**: Add a brief "Winner" verdict at the end based on facts, and explicitly mention the data source used (e.g., "Data based on official specs from [Manufacturer]").
       
       Start directly with the table.`;
 
@@ -56,13 +56,13 @@ export const ComparisonView: React.FC = () => {
             <CompareIcon className="w-6 h-6 text-orange-400" />
          </div>
          <h2 className="text-lg font-bold text-white">مقارنة الأجهزة</h2>
-         <p className="text-[10px] text-gray-400">قارن بين الهواتف والإلكترونيات بدقة</p>
+         <p className="text-[10px] text-gray-400">مقارنة دقيقة من مصادر رسمية وموثوقة</p>
        </div>
 
        <div className="bg-gray-800 p-4 rounded-2xl border border-gray-700 shadow-lg mb-6">
           <div className="space-y-3">
             <div>
-                <label className="block text-[10px] text-gray-400 mb-1.5 mr-1">الطرف الأول (مثال: iPhone 15)</label>
+                <label className="block text-[10px] text-gray-400 mb-1.5 mr-1">الطرف الأول (مثال: iPhone 15 Pro)</label>
                 <input 
                     type="text" 
                     value={device1}
@@ -95,7 +95,7 @@ export const ComparisonView: React.FC = () => {
                 {isLoading ? (
                     <>
                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                     جاري المقارنة...
+                     جاري البحث والمقارنة...
                     </>
                 ) : (
                     <>ابدأ المقارنة</>

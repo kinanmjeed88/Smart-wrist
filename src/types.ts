@@ -30,4 +30,11 @@ export interface NewsItem {
   details: string;
 }
 
-export type View = 'home' | 'aiNews' | 'chat' | 'personalInfo' | 'comparison';
+export interface PhoneNewsItem {
+  modelName: string;
+  specs: string[];
+  summary: string;
+  releaseDate?: string;
+}
+
+export type View = 'home' | 'aiNews' | 'phoneNews' | 'chat' | 'personalInfo' | 'comparison';
