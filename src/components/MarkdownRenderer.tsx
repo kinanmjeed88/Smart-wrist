@@ -1,66 +1,35 @@
+
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
 
 interface MarkdownRendererProps {
   text: string;
 }
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ text }) => {
-  // A simple renderer that handles paragraphs, bold, italics, links, and lists.
-  const lines = text.split('\n');
-
-  // FIX: Replaced JSX.Element with React.ReactElement to resolve "Cannot find namespace 'JSX'" error.
-  const renderInline = (line: string): (string | React.ReactElement)[] => {
-    // This regex will handle multiple formats in one line
-    const parts = line.split(/(\*\*.*?\*\*|\*.*?\*|\[.*?\]\(.*?\))/g);
-    return parts.map((part, i) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={i}>{part.slice(2, -2)}</strong>;
-      }
-      if (part.startsWith('*') && part.endsWith('*')) {
-        return <em key={i}>{part.slice(1, -1)}</em>;
-      }
-      const linkMatch = part.match(/\[(.*?)\]\((.*?)\)/);
-      if (linkMatch) {
-        return (
-          <a href={linkMatch[2]} key={i} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline break-all">
-            {linkMatch[1]}
-          </a>
-        );
-      }
-      return part;
-    });
-  };
-
-  // FIX: Replaced JSX.Element with React.ReactElement to resolve "Cannot find namespace 'JSX'" error.
-  const elements: React.ReactElement[] = [];
-  let listItems: string[] = [];
-
-  const flushList = () => {
-    if (listItems.length > 0) {
-      elements.push(
-        <ul key={`ul-${elements.length}`} className="list-disc list-inside space-y-1 my-2">
-          {listItems.map((item, i) => (
-            <li key={i}>{renderInline(item)}</li>
-          ))}
-        </ul>
-      );
-      listItems = [];
-    }
-  };
-
-  lines.forEach((line) => {
-    const listItemMatch = line.match(/^\s*[-*]\s+(.*)/);
-    if (listItemMatch) {
-      listItems.push(listItemMatch[1]);
-    } else {
-      flushList();
-      if (line.trim() !== '') {
-        elements.push(<p key={`p-${elements.length}`} className="my-1 whitespace-pre-wrap">{renderInline(line)}</p>);
-      }
-    }
-  });
-
-  flushList();
-
-  return <div className="text-white">{elements}</div>;
+  return (
+    <div className="markdown-content text-gray-100 text-sm">
+      <ReactMarkdown
+        components={{
+          a: ({ node, ...props }) => (
+            <a {...props} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline break-all font-medium" />
+          ),
+          strong: ({ node, ...props }) => <strong {...props} className="text-white font-bold" />,
+          em: ({ node, ...props }) => <em {...props} className="text-gray-300 italic" />,
+          ul: ({ node, ...props }) => <ul {...props} className="list-disc list-inside my-2 space-y-1 marker:text-cyan-500" />,
+          ol: ({ node, ...props }) => <ol {...props} className="list-decimal list-inside my-2 space-y-1 marker:text-cyan-500" />,
+          p: ({ node, ...props }) => <p {...props} className="my-2 leading-relaxed whitespace-pre-wrap" />,
+          // Table styles
+          table: ({ node, ...props }) => <div className="overflow-x-auto my-3 rounded-lg border border-gray-700"><table {...props} className="min-w-full divide-y divide-gray-700" /></div>,
+          thead: ({ node, ...props }) => <thead {...props} className="bg-gray-800" />,
+          tbody: ({ node, ...props }) => <tbody {...props} className="divide-y divide-gray-700 bg-gray-900/50" />,
+          tr: ({ node, ...props }) => <tr {...props} />,
+          th: ({ node, ...props }) => <th {...props} className="px-3 py-2 text-right text-xs font-medium text-gray-300 uppercase tracking-wider border-l border-gray-700 last:border-0" />,
+          td: ({ node, ...props }) => <td {...props} className="px-3 py-2 whitespace-normal text-xs text-gray-200 border-l border-gray-700 last:border-0" />,
+        }}
+      >
+        {text}
+      </ReactMarkdown>
+    </div>
+  );
 };

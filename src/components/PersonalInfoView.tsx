@@ -52,7 +52,8 @@ export const PersonalInfoView: React.FC<PersonalInfoViewProps> = ({ messages, se
     setIsLoading(true);
 
     const fullPrompt = `${PERSONAL_INFO_PROMPT} "${userInput}"`;
-    const aiResponseText = await generateContent(fullPrompt, undefined, "You are a helpful assistant answering questions based only on provided data.");
+    // FIX: Pass false for useSearch parameter to align with function signature (prompt, image, useSearch, overrideSystemInstruction)
+    const aiResponseText = await generateContent(fullPrompt, undefined, false, "You are a helpful assistant answering questions based only on provided data.");
 
     const aiMessage: ChatMessage = {
       id: Date.now().toString() + '-ai',
