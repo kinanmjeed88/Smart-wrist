@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { streamAiNews } from '../services/geminiService';
+import { getAiNews } from '../services/geminiService';
 import { NewsItem } from '../types';
 
 const NewsCardSkeleton: React.FC = () => (
@@ -20,7 +20,7 @@ const NewsCardSkeleton: React.FC = () => (
 
 export const AiNewsView: React.FC = () => {
     const [news, setNews] = useState<NewsItem[]>([]);
-    const [isStreaming, setIsStreaming] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
     const fetchCalled = useRef(false);
@@ -30,15 +30,11 @@ export const AiNewsView: React.FC = () => {
         fetchCalled.current = true;
         
         try {
-            setIsStreaming(true);
+            setIsLoading(true);
             setError(null);
-            setNews([]); // Clear previous news
             
-            const newsGenerator = streamAiNews();
-            
-            for await (const item of newsGenerator) {
-                setNews(prev => [...prev, item]);
-            }
+            const newsItems = await getAiNews();
+            setNews(newsItems);
         } catch (err) {
             if (err instanceof Error) {
                 setError(err.message);
@@ -46,7 +42,7 @@ export const AiNewsView: React.FC = () => {
                 setError("حدث خطأ غير متوقع.");
             }
         } finally {
-            setIsStreaming(false);
+            setIsLoading(false);
             fetchCalled.current = false; 
         }
     }, []);
@@ -56,7 +52,7 @@ export const AiNewsView: React.FC = () => {
         if (news.length === 0) {
             fetchNews();
         } else {
-            setIsStreaming(false);
+            setIsLoading(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -120,10 +116,11 @@ export const AiNewsView: React.FC = () => {
                     </div>
                 </div>
             ))}
-            {isStreaming && (
+            {isLoading && (
                 <>
                     <NewsCardSkeleton />
-                    <div className="text-center text-gray-500 text-[10px] animate-pulse">جاري جلب المزيد من الأخبار...</div>
+                    <NewsCardSkeleton />
+                    <div className="text-center text-gray-500 text-[10px] animate-pulse">جاري جلب آخر الأخبار التقنية...</div>
                 </>
             )}
         </div>

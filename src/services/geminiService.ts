@@ -49,7 +49,7 @@ export const generateContent = async (
     }
 
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-2.5-flash', // استخدام النموذج المستقر والسريع
+      model: 'gemini-2.5-flash',
       contents: { parts },
       config: {
           systemInstruction: systemInstruction,
@@ -96,16 +96,53 @@ export async function* generateContentStream(
   }
 }
 
-// دالة تعديل الصور
-export const generateEditedImage = async (
-  prompt: string,
-  imageBase64: string,
-  mimeType: string
-): Promise<string | null> => {
+// دالة جلب الأخبار (Stable JSON)
+export const getAiNews = async (): Promise<NewsItem[]> => {
   try {
     const apiKey = getApiKey();
     if (!apiKey) throw new Error("مفتاح API مفقود");
 
+    const ai = new GoogleGenAI({ apiKey });
+    
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: "Provide the 10 most recent and significant news items about AI innovations, new tools, and major advancements.",
+      config: {
+        systemInstruction: "You are an expert AI news analyst. Provide summaries and details in Arabic.",
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              title: { type: Type.STRING, description: "Concise headline" },
+              summary: { type: Type.STRING, description: "Brief summary in Arabic" },
+              link: { type: Type.STRING, description: "Official URL or source" },
+              details: { type: Type.STRING, description: "Detailed explanation in Arabic" }
+            },
+            required: ["title", "summary", "link", "details"]
+          }
+        }
+      }
+    });
+
+    const text = response.text;
+    if (!text) return [];
+    
+    return JSON.parse(text) as NewsItem[];
+
+  } catch (error) {
+    console.error("Failed to fetch AI news:", error);
+    throw new Error("فشل في جلب أخبار الذكاء الاصطناعي. يرجى المحاولة لاحقاً.");
+  }
+};
+
+// دالة تعديل الصور
+export const generateEditedImage = async (prompt: string, imageBase64: string, mimeType: string): Promise<string | null> => {
+  try {
+    const apiKey = getApiKey();
+    if (!apiKey) throw new Error("مفتاح API مفقود");
+    
     const ai = new GoogleGenAI({ apiKey });
 
     const response = await ai.models.generateContent({
@@ -114,92 +151,32 @@ export const generateEditedImage = async (
         parts: [
           {
             inlineData: {
-              mimeType: mimeType,
               data: imageBase64,
-            },
+              mimeType: mimeType
+            }
           },
           {
-            text: prompt,
-          },
-        ],
+            text: prompt
+          }
+        ]
       },
       config: {
-        responseModalities: [Modality.IMAGE],
-      },
+          responseModalities: [Modality.IMAGE]
+      }
     });
 
-    const part = response.candidates?.[0]?.content?.parts?.[0];
-    if (part?.inlineData?.data) {
-        return part.inlineData.data;
-    }
-    return null;
-  } catch (error) {
-    console.error("Image editing failed:", error);
-    return null;
-  }
-};
-
-// دالة جلب الأخبار (Streaming JSON)
-export async function* streamAiNews(): AsyncGenerator<NewsItem> {
-  try {
-    const apiKey = getApiKey();
-    if (!apiKey) throw new Error("مفتاح API مفقود");
-
-    const ai = new GoogleGenAI({ apiKey });
-    
-    const newsPrompt = `You are an expert AI news analyst. 
-    Task: Provide the 10 most recent and significant news items about AI.
-    Output Format: JSON Lines. Each line must be a single, valid JSON object. DO NOT wrap the output in an array [].
-    
-    Structure for each JSON object:
-    {
-      "title": "Concise headline (max 2 lines)",
-      "summary": "Brief summary in Arabic (max 4 lines)",
-      "link": "Official URL or source",
-      "details": "Detailed explanation in Arabic"
-    }
-    
-    Ensure the content is fresh and relevant. Start outputting immediately.`;
-
-    const responseStream = await ai.models.generateContentStream({
-      model: 'gemini-2.5-flash',
-      contents: newsPrompt,
-    });
-
-    let buffer = '';
-
-    for await (const chunk of responseStream) {
-        const text = chunk.text || '';
-        buffer += text;
-
-        // معالجة النصوص سطر بسطر لاستخراج JSON
-        let newlineIndex;
-        while ((newlineIndex = buffer.indexOf('\n')) >= 0) {
-            const line = buffer.slice(0, newlineIndex).trim();
-            buffer = buffer.slice(newlineIndex + 1);
-
-            if (line && line.startsWith('{') && line.endsWith('}')) {
-                try {
-                    const item = JSON.parse(line) as NewsItem;
-                    yield item;
-                } catch (e) {
-                    console.warn("Failed to parse news line:", line);
-                }
+    const parts = response.candidates?.[0]?.content?.parts;
+    if (parts) {
+        for (const part of parts) {
+            if (part.inlineData && part.inlineData.data) {
+                return part.inlineData.data;
             }
         }
     }
-    
-    // معالجة أي بقايا في الذاكرة المؤقتة
-    if (buffer.trim().startsWith('{') && buffer.trim().endsWith('}')) {
-         try {
-            const item = JSON.parse(buffer.trim()) as NewsItem;
-            yield item;
-        } catch (e) {
-            console.warn("Failed to parse remaining buffer:", buffer);
-        }
-    }
+    return null;
 
   } catch (error) {
-    console.error("Failed to stream AI news:", error);
+    console.error("Failed to generate edited image:", error);
+    return null;
   }
-}
+};
