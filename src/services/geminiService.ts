@@ -15,7 +15,8 @@ interface ImagePart {
 type Part = TextPart | ImagePart;
 
 const getApiKey = (): string => {
-  return localStorage.getItem('gemini_api_key') || process.env.API_KEY || '';
+  // Updated key name to match App.tsx
+  return localStorage.getItem('gemini-api-key') || process.env.API_KEY || '';
 };
 
 const getUserMemory = (): string => {
@@ -77,7 +78,6 @@ export const generateContent = async (
       parts.unshift(image);
     }
 
-    // دمج الذاكرة مع تعليمات النظام
     const finalSystemInstruction = overrideSystemInstruction || 
         `${SYSTEM_PROMPT}\n\nمعلومات عن المستخدم (الذاكرة المحلية): ${userMemory || "لا توجد معلومات محفوظة بعد."}\nاستخدم هذه المعلومات لتخصيص الإجابة.`;
 
@@ -85,7 +85,6 @@ export const generateContent = async (
         systemInstruction: finalSystemInstruction,
     };
 
-    // تفعيل البحث إذا طلب ذلك (للمقارنات والروابط الحقيقية)
     if (useSearch) {
         config.tools = [{ googleSearch: {} }];
     }
@@ -96,8 +95,6 @@ export const generateContent = async (
       config: config
     });
     
-    // عند استخدام البحث، الروابط تأتي في groundingChunks، لكن النموذج يدمجها في النص عادة.
-    // إذا كان هناك groundingMetadata، نتأكد من إرجاع النص.
     return response.text ?? '';
   }, 2, 1000);
 };
@@ -150,7 +147,6 @@ export const getAiNews = async (): Promise<NewsItem[]> => {
 
     const ai = new GoogleGenAI({ apiKey });
     
-    // نستخدم Schema للحصول على JSON دقيق
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: "Give me 6 very recent AI news items (last 48 hours if possible). Return JSON array. Language: Arabic. Fields: title, summary, link, details.",
