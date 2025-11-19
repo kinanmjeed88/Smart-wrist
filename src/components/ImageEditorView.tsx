@@ -36,8 +36,8 @@ export const ImageEditorView: React.FC = () => {
       img.src = URL.createObjectURL(file);
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        // Reduced max dimension to save tokens and avoid 429 quota errors
-        const maxDim = 768; 
+        // Significantly reduced max dimension to 512px to aggressively save tokens and avoid 429 quota errors
+        const maxDim = 512; 
         let width = img.width;
         let height = img.height;
 
@@ -63,8 +63,8 @@ export const ImageEditorView: React.FC = () => {
         }
         ctx.drawImage(img, 0, 0, width, height);
         
-        // Compress to JPEG 60% quality to further reduce token count
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+        // Compress to JPEG 50% quality to minimize payload size
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
         resolve(dataUrl.split(',')[1]);
       };
       img.onerror = (e) => reject(e);
@@ -127,7 +127,7 @@ export const ImageEditorView: React.FC = () => {
       }
     } catch (error: any) {
       console.error(error);
-      alert(`حدث خطأ أثناء المعالجة: ${error.message || 'تأكد من اتصالك بالإنترنت ومفتاح API'}`);
+      alert(error.message || 'حدث خطأ أثناء المعالجة. تأكد من مفتاح API.');
     } finally {
       setIsLoading(false);
     }

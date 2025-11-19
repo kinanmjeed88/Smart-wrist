@@ -24,7 +24,7 @@ const handleError = (error: unknown): string => {
     const errorString = String(error);
     
     if (errorString.includes('429') || errorString.includes('Quota exceeded') || errorString.includes('quota')) {
-        return "عذراً، لقد تجاوزت الحد المسموح به للاستخدام المجاني حالياً (Quota Exceeded). يرجى المحاولة لاحقاً أو استخدام صورة أصغر حجماً.";
+        return "عذراً، لقد تجاوزت الحصة المجانية المحددة للنموذج (Quota Exceeded). \nبالنسبة للصور: النموذج المستخدم هو الوحيد المتاح حالياً للتعديل وقد يكون مزدحماً.\nيرجى الانتظار قليلاً والمحاولة مرة أخرى.";
     }
 
     if (error instanceof Error) {
@@ -52,8 +52,9 @@ export const generateContent = async (
       parts.unshift(image);
     }
 
+    // Use gemini-flash-latest (stable 1.5) for better free tier quota on text tasks
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-flash-latest',
       contents: { parts },
       config: {
           systemInstruction: systemInstruction,
@@ -83,8 +84,9 @@ export async function* generateContentStream(
       parts.unshift(image);
     }
 
+    // Use gemini-flash-latest (stable 1.5) for better free tier quota on text tasks
     const responseStream = await ai.models.generateContentStream({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-flash-latest',
         contents: { parts },
         config: {
             systemInstruction: SYSTEM_PROMPT,
@@ -121,8 +123,9 @@ export async function* streamAiNews(): AsyncGenerator<NewsItem> {
     
     Ensure the content is fresh and relevant. Start outputting immediately.`;
 
+    // Use gemini-flash-latest (stable 1.5) for better free tier quota
     const responseStream = await ai.models.generateContentStream({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-flash-latest',
       contents: newsPrompt,
     });
 
@@ -140,8 +143,6 @@ export async function* streamAiNews(): AsyncGenerator<NewsItem> {
 
             if (line && line.startsWith('{') && line.endsWith('}')) {
                 try {
-                    // Attempt to fix potential trailing commas or small JSON errors if strictly necessary,
-                    // but standard JSON.parse should work if the model obeys JSON Lines.
                     const item = JSON.parse(line) as NewsItem;
                     yield item;
                 } catch (e) {
@@ -163,8 +164,6 @@ export async function* streamAiNews(): AsyncGenerator<NewsItem> {
 
   } catch (error) {
     console.error("Failed to stream AI news:", error);
-    // We can't easily yield an error object since the return type is NewsItem. 
-    // The UI handles the empty state or we could yield a dummy error item if needed.
   }
 }
 
@@ -179,6 +178,8 @@ export const generateEditedImage = async (
 
     const ai = new GoogleGenAI({ apiKey });
 
+    // We must use gemini-2.5-flash-image because gemini-1.5-flash DOES NOT support image generation.
+    // If 429 errors persist, it's a strict limit on the free tier for this model.
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {
@@ -199,7 +200,6 @@ export const generateEditedImage = async (
       },
     });
 
-    // Robust check for data existence to satisfy TypeScript strict checks
     const candidate = response.candidates?.[0];
     const part = candidate?.content?.parts?.[0];
     
