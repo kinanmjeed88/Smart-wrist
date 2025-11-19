@@ -1,5 +1,5 @@
 
-import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
+import { GoogleGenAI, GenerateContentResponse, Type, Modality } from "@google/genai";
 import { SYSTEM_PROMPT } from '../constants';
 import { NewsItem } from "../types";
 
@@ -161,3 +161,46 @@ export async function* streamAiNews(): AsyncGenerator<NewsItem> {
     // The UI handles the empty state or we could yield a dummy error item if needed.
   }
 }
+
+export const generateEditedImage = async (
+  prompt: string,
+  imageBase64: string,
+  mimeType: string
+): Promise<string | null> => {
+  try {
+    const apiKey = getApiKey();
+    if (!apiKey) throw new Error("مفتاح API مفقود");
+
+    const ai = new GoogleGenAI({ apiKey });
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: {
+        parts: [
+          {
+            inlineData: {
+              data: imageBase64,
+              mimeType: mimeType,
+            },
+          },
+          {
+            text: prompt,
+          },
+        ],
+      },
+      config: {
+        responseModalities: [Modality.IMAGE],
+      },
+    });
+
+    const part = response.candidates?.[0]?.content?.parts?.[0];
+    if (part && part.inlineData) {
+      return part.inlineData.data;
+    }
+    return null;
+
+  } catch (error) {
+    console.error("Image generation failed:", error);
+    throw error;
+  }
+};

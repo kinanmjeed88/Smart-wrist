@@ -4,14 +4,15 @@ import { ChatView } from './components/ChatView';
 import { PersonalInfoView } from './components/PersonalInfoView';
 import { AiNewsView } from './components/AiNewsView';
 import { HomeView } from './components/HomeView';
-import { SparklesIcon, InfoIcon, NewsIcon, LogoutIcon, HomeIcon } from './components/Icons';
+import { ImageEditorView } from './components/ImageEditorView';
+import { SparklesIcon, InfoIcon, NewsIcon, LogoutIcon, HomeIcon, MagicWandIcon } from './components/Icons';
 import { ChatMessage } from './types';
 import { ApiKeyModal } from './components/ApiKeyModal';
 
-type View = 'home' | 'aiNews' | 'chat' | 'personalInfo';
+type View = 'home' | 'aiNews' | 'chat' | 'personalInfo' | 'imageEditor';
 
 // TechTouch Themed Icon (Fingerprint Circuit SVG as Base64)
-const profileImage = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBmaWxsPSJub25lIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZ3JhZCIgeDE9IjAiIHkxPSIwIiB4Mj0iMTAwIiB5Mj0iMTAwIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzIyZDNZWSIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMGI1N2QwIiAvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNDgiIGZpbGw9IiMwZjE3MmEiIHN0cm9rZT0idXJsKCNncmFkKSIgc3Ryb2tlLXdpZHRoPSIyIiAvPgogIDxwYXRoIGQ9Ik01MCAyNUc1MCAzNU01MCA2NUc1MCA3NSIgc3Ryb2tlPSIjMjJkM2VlIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgLz4KICA8cGF0aCBkPSJNMzUuMzU1IDM1LjM1NUMzMS40NSAzOS4yNiAyOSA0NC42NSAyOSA1MEMyOSA1NS4zNSAzMS40NSA2MC43NCAzNS4zNTUgNjQuNjQ1IiBzdHJva2U9IiMyMmQzZWUiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiAvPgogIDxwYXRoIGQ9Ik02NC42NDUgMzUuMzU1QzY4LjU1IDM5LjI2IDcxIDQ0LjY1IDcxIDUwQzcxIDU1LjM1IDY4LjU1IDYwLjc0IDY0LjY0NSA2NC42NDUiIHN0cm9rZT0iIzIyZDNZWSIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiIC8+CiAgPHBhdGggZD0iTTQyIDQyQzQyIDQyIDQ0IDQ1IDQ0IDUwQzQ0IDU1IDQyIDU4IDQyIDU4IiBzdHJva2U9IiMyMmQzZWUiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiAvPgogIDxwYXRoIGQ9Ik01OCA0MkM1OCA0MiA1NiA0NSA1NiA1MEM1NiA1NSA1OCA1OCA1OCA1OCIgc3Ryb2tlPSIjMjJkM2VlIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgLz4KPC9zdmc+";
+const profileImage = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBmaWxsPSJub25lIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZ3JhZCIgeDE9IjAiIHkxPSIwIiB4Mj0iMTAwIiB5Mj0iMTAwIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzIyZDNZWSIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMGI1N2QwIiAvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+CiAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNDgiIGZpbGw9IiMwZjE3MmEiIHN0cm9rZT0idXJsKCNncmFkKSIgc3Ryb2tlLXdpZHRoPSIyIiAvPgogIDxwYXRoIGQ9Ik01MCAyNUc1MCAzNU01MCA2NUc1MCA3NSIgc3Ryb2tlPSIjMjJkM2VlIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgLz4KICA8cGF0aCBkPSJNMzUuMzU1IDM1LjM1NUMzMS40NSAzOS4yNiAyOSA0NC42NSAyOSA1MEMyOSA1NS4zNSAzMS40NSA2MC43NCAzNS4zNTUgNjQuNjQ1IiBzdHJva2U9IiMyMmQzZWUiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiAvPgogIDxwYXRoIGQ9Ik02NC42NDUgMzUuMzU1QzY4LjU1IDM5LjI2IDcxIDQ0LjY1IDcxIDUwQzcxIDU1LjM1IDY4LjU1IDYwLjE0IDY0LjY0NSA2NC42NDUiIHN0cm9rZT0iIzIyZDNZWSIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiIC8+CiAgPHBhdGggZD0iTTQyIDQyQzQyIDQyIDQ0IDQ1IDQ0IDUwQzQ0IDU1IDQyIDU4IDQyIDU4IiBzdHJva2U9IiMyMmQzZWUiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiAvPgogIDxwYXRoIGQ9Ik01OCA0MkM1OCA0MiA1NiA0NSA1NiA1MEM1NiA1NSA1OCA1OCA1OCA1OCIgc3Ryb2tlPSIjMjJkM2VlIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgLz4KPC9zdmc+";
 
 const App: React.FC = () => {
   const [view, setView] = useState<View>('home');
@@ -66,6 +67,7 @@ const App: React.FC = () => {
         {view === 'aiNews' && <AiNewsView />}
         {view === 'chat' && <ChatView messages={chatMessages} setMessages={setChatMessages} />}
         {view === 'personalInfo' && <PersonalInfoView messages={infoMessages} setMessages={setInfoMessages} />}
+        {view === 'imageEditor' && <ImageEditorView />}
       </main>
 
       {/* Bottom Navigation */}
