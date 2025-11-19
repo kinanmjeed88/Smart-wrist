@@ -3,7 +3,6 @@ import { GoogleGenAI, GenerateContentResponse, Type, Modality } from "@google/ge
 import { SYSTEM_PROMPT } from '../constants';
 import { NewsItem } from "../types";
 
-// واجهات لتعريف أجزاء الرسالة (نصوص أو صور مدخلة)
 interface TextPart {
   text: string;
 }
@@ -19,12 +18,8 @@ const getApiKey = (): string => {
   return localStorage.getItem('gemini_api_key') || process.env.API_KEY || '';
 };
 
-// دالة انتظار بسيطة
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-/**
- * دالة لاستخراج نص الخطأ الحقيقي من كائنات الخطأ المعقدة أو المتداخلة
- */
 const extractErrorDetails = (error: any): string => {
     if (!error) return "Unknown Error";
     
@@ -41,24 +36,20 @@ const extractErrorDetails = (error: any): string => {
         }
     }
 
-    // محاولة تنظيف الرسالة إذا كانت JSON string
-    // نكرر العملية لأن أحياناً تكون JSON داخل JSON داخل JSON
+    // محاولة تنظيف الرسالة إذا كانت JSON string متداخلة
     for (let i = 0; i < 3; i++) {
         if (typeof msg === 'string' && (msg.trim().startsWith('{') || msg.trim().startsWith('['))) {
             try {
                 const parsed = JSON.parse(msg);
                 if (parsed.error) {
-                     // وجدنا كائن خطأ بداخله
                      if (parsed.error.message) msg = parsed.error.message;
                      else msg = JSON.stringify(parsed.error);
                 } else if (parsed.message) {
                     msg = parsed.message;
                 } else {
-                    // لم نجد حقول خطأ معروفة، نتوقف هنا
                     break;
                 }
             } catch (e) {
-                // فشل التحليل، نستخدم النص كما هو
                 break;
             }
         } else {
@@ -68,9 +59,8 @@ const extractErrorDetails = (error: any): string => {
     return msg;
 };
 
-// دالة معالجة الأخطاء العامة للعرض للمستخدم
 const handleError = (error: unknown): string => {
-    console.error("Gemini API Error Raw:", error);
+    console.error("Gemini API Error:", error);
     
     const errorMessage = extractErrorDetails(error);
     const lowerMsg = errorMessage.toLowerCase();
@@ -79,16 +69,12 @@ const handleError = (error: unknown): string => {
         return "خطأ في مفتاح API. يرجى التأكد من صلاحية المفتاح.";
     }
     if (lowerMsg.includes('503') || lowerMsg.includes('overloaded') || lowerMsg.includes('unavailable')) {
-        return "الخادم مشغول جداً حالياً (503). يرجى المحاولة لاحقاً.";
-    }
-    if (lowerMsg.includes('fetch failed') || lowerMsg.includes('network')) {
-        return "مشكلة في الاتصال بالإنترنت.";
+        return "الخادم مشغول (503). يرجى المحاولة لاحقاً.";
     }
     
     return `حدث خطأ: ${errorMessage.substring(0, 100)}...`;
 }
 
-// دالة لإعادة المحاولة تلقائياً عند حدوث ضغط على الخادم
 async function retryOperation<T>(operation: () => Promise<T>, retries = 3, baseDelay = 2000): Promise<T> {
     let lastError: any;
     for (let i = 0; i < retries; i++) {
@@ -98,25 +84,19 @@ async function retryOperation<T>(operation: () => Promise<T>, retries = 3, baseD
             lastError = error;
             const errorMsg = extractErrorDetails(error).toLowerCase();
             
-            // التحقق مما إذا كان الخطأ يستوجب إعادة المحاولة
             const isRetryable = 
                 errorMsg.includes('503') || 
                 errorMsg.includes('overloaded') || 
                 errorMsg.includes('unavailable') || 
-                errorMsg.includes('too many requests') ||
-                errorMsg.includes('network') ||
                 errorMsg.includes('fetch failed') ||
                 error?.status === 503;
             
-            // إذا لم يكن خطأ ضغط، وكان خطأ منطقي (مثل Bad Request 400)، لا نعد المحاولة
-            if (!isRetryable && (errorMsg.includes('400') || errorMsg.includes('invalid') || errorMsg.includes('api key'))) {
+            if (!isRetryable) {
                  throw error;
             }
 
             if (i < retries - 1) {
-                // زيادة وقت الانتظار تصاعدياً مع إضافة عشوائية بسيطة
                 const waitTime = baseDelay * Math.pow(2, i) + (Math.random() * 500); 
-                console.warn(`Attempt ${i + 1} failed (Retryable: ${isRetryable}). Retrying in ${Math.round(waitTime)}ms... Error:`, errorMsg);
                 await delay(waitTime);
             }
         }
@@ -124,7 +104,6 @@ async function retryOperation<T>(operation: () => Promise<T>, retries = 3, baseD
     throw lastError;
 }
 
-// دالة توليد النص العادية
 export const generateContent = async (
   prompt: string,
   image?: ImagePart,
@@ -153,7 +132,6 @@ export const generateContent = async (
   }, 3, 1000);
 };
 
-// دالة توليد النص المتدفق (Streaming)
 export async function* generateContentStream(
   prompt: string,
   image?: ImagePart
@@ -187,31 +165,31 @@ export async function* generateContentStream(
   }
 }
 
-// دالة جلب الأخبار
 export const getAiNews = async (): Promise<NewsItem[]> => {
-  // نستخدم 5 محاولات مع تأخير يبدأ من 2 ثانية (2، 4، 8، 16...)
   return retryOperation(async () => {
     const apiKey = getApiKey();
     if (!apiKey) throw new Error("مفتاح API مفقود");
 
     const ai = new GoogleGenAI({ apiKey });
     
-    // تقليل عدد الأخبار المطلوبة من 10 إلى 6 لتقليل الحمل وتجنب Timeout
+    // تبسيط الطلب جداً ليكون خفيفاً مثل الشات
+    // 1. طلب 6 عناصر فقط
+    // 2. استخدام schema بسيطة
+    // 3. عدم استخدام systemInstruction ثقيلة هنا
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: "Provide the 6 most recent and significant news items about AI innovations, new tools, and major advancements.",
+      contents: "Generate a JSON list of 6 recent AI news items. Language: Arabic. Required fields: title, summary, link, details.",
       config: {
-        systemInstruction: "You are an expert AI news analyst. Provide summaries and details in Arabic.",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.ARRAY,
           items: {
             type: Type.OBJECT,
             properties: {
-              title: { type: Type.STRING, description: "Concise headline" },
-              summary: { type: Type.STRING, description: "Brief summary in Arabic" },
-              link: { type: Type.STRING, description: "Official URL or source" },
-              details: { type: Type.STRING, description: "Detailed explanation in Arabic" }
+              title: { type: Type.STRING },
+              summary: { type: Type.STRING },
+              link: { type: Type.STRING },
+              details: { type: Type.STRING }
             },
             required: ["title", "summary", "link", "details"]
           }
@@ -225,15 +203,12 @@ export const getAiNews = async (): Promise<NewsItem[]> => {
     try {
         return JSON.parse(text) as NewsItem[];
     } catch (e) {
-        console.error("JSON Parse Error", e);
-        // رمي خطأ هنا سيجعل الدالة تعيد المحاولة تلقائياً إذا كان الرد غير صالح
-        throw new Error("فشل في قراءة البيانات من المصدر (JSON Error).");
+        throw new Error("فشل تحليل البيانات.");
     }
 
-  }, 5, 2000);
+  }, 4, 1500); // 4 محاولات مع تأخير أولي 1.5 ثانية
 };
 
-// دالة تعديل الصور باستخدام نموذج gemini-2.5-flash-image
 export const generateEditedImage = async (prompt: string, imageBase64: string, mimeType: string): Promise<string | null> => {
   return retryOperation(async () => {
     const apiKey = getApiKey();
@@ -261,7 +236,6 @@ export const generateEditedImage = async (prompt: string, imageBase64: string, m
       },
     });
 
-    // استخراج الصورة من الرد
     if (response.candidates?.[0]?.content?.parts) {
       for (const part of response.candidates[0].content.parts) {
         if (part.inlineData?.data) {
