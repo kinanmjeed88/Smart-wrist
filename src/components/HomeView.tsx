@@ -66,8 +66,8 @@ export const HomeView: React.FC<HomeViewProps> = ({ setView }) => {
                 <MagicWandIcon className="w-6 h-6 text-pink-400" />
              </div>
              <div className="flex-1 mr-4">
-                <h3 className="text-lg font-bold text-gray-100">تعديل الصور AI</h3>
-                <p className="text-xs text-gray-400 mt-1">تحويل العمر، تغيير الملابس، تحسين الدقة</p>
+                <h3 className="text-lg font-bold text-gray-100">تعديل الصور الذكي</h3>
+                <p className="text-xs text-gray-400 mt-1">تغيير ملامح، ملابس، وأكثر بلمسة واحدة</p>
              </div>
              <ArrowRightIcon className="w-5 h-5 text-gray-500 group-hover:text-pink-400 transform group-hover:-translate-x-1 transition-all" />
           </div>

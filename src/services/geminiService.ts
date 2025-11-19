@@ -3,7 +3,7 @@ import { GoogleGenAI, GenerateContentResponse, Type, Modality } from "@google/ge
 import { SYSTEM_PROMPT } from '../constants';
 import { NewsItem } from "../types";
 
-// For better type safety
+// واجهات لتعريف أجزاء الرسالة (نصوص أو صور مدخلة)
 interface TextPart {
   text: string;
 }
@@ -30,6 +30,7 @@ const handleError = (error: unknown): string => {
     return "حدث خطأ غير معروف. يرجى التحقق من اتصالك بالإنترنت.";
 }
 
+// دالة توليد النص العادية (تدعم إدخال الصور للتحليل)
 export const generateContent = async (
   prompt: string,
   image?: ImagePart,
@@ -42,12 +43,13 @@ export const generateContent = async (
     const ai = new GoogleGenAI({ apiKey });
 
     const parts: Part[] = [{ text: prompt }];
+    // إذا تم إرفاق صورة للتحليل، نضعها في بداية المصفوفة
     if (image) {
       parts.unshift(image);
     }
 
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-flash', // استخدام النموذج المستقر والسريع
       contents: { parts },
       config: {
           systemInstruction: systemInstruction,
@@ -60,7 +62,7 @@ export const generateContent = async (
   }
 };
 
-
+// دالة توليد النص المتدفق (Streaming)
 export async function* generateContentStream(
   prompt: string,
   image?: ImagePart
@@ -72,6 +74,7 @@ export async function* generateContentStream(
         return;
     }
     const ai = new GoogleGenAI({ apiKey });
+    
     const parts: Part[] = [{ text: prompt }];
     if (image) {
       parts.unshift(image);
@@ -93,6 +96,50 @@ export async function* generateContentStream(
   }
 }
 
+// دالة تعديل الصور
+export const generateEditedImage = async (
+  prompt: string,
+  imageBase64: string,
+  mimeType: string
+): Promise<string | null> => {
+  try {
+    const apiKey = getApiKey();
+    if (!apiKey) throw new Error("مفتاح API مفقود");
+
+    const ai = new GoogleGenAI({ apiKey });
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: {
+        parts: [
+          {
+            inlineData: {
+              mimeType: mimeType,
+              data: imageBase64,
+            },
+          },
+          {
+            text: prompt,
+          },
+        ],
+      },
+      config: {
+        responseModalities: [Modality.IMAGE],
+      },
+    });
+
+    const part = response.candidates?.[0]?.content?.parts?.[0];
+    if (part?.inlineData?.data) {
+        return part.inlineData.data;
+    }
+    return null;
+  } catch (error) {
+    console.error("Image editing failed:", error);
+    return null;
+  }
+};
+
+// دالة جلب الأخبار (Streaming JSON)
 export async function* streamAiNews(): AsyncGenerator<NewsItem> {
   try {
     const apiKey = getApiKey();
@@ -100,10 +147,9 @@ export async function* streamAiNews(): AsyncGenerator<NewsItem> {
 
     const ai = new GoogleGenAI({ apiKey });
     
-    // We request strict JSON Lines format for streaming parsing
     const newsPrompt = `You are an expert AI news analyst. 
     Task: Provide the 10 most recent and significant news items about AI.
-    Output Format: JSON Lines. Each line must be a single, valid JSON object. DO NOT wrap the output in an array []. DO NOT use markdown code blocks.
+    Output Format: JSON Lines. Each line must be a single, valid JSON object. DO NOT wrap the output in an array [].
     
     Structure for each JSON object:
     {
@@ -126,7 +172,7 @@ export async function* streamAiNews(): AsyncGenerator<NewsItem> {
         const text = chunk.text || '';
         buffer += text;
 
-        // Process the buffer line by line
+        // معالجة النصوص سطر بسطر لاستخراج JSON
         let newlineIndex;
         while ((newlineIndex = buffer.indexOf('\n')) >= 0) {
             const line = buffer.slice(0, newlineIndex).trim();
@@ -134,8 +180,6 @@ export async function* streamAiNews(): AsyncGenerator<NewsItem> {
 
             if (line && line.startsWith('{') && line.endsWith('}')) {
                 try {
-                    // Attempt to fix potential trailing commas or small JSON errors if strictly necessary,
-                    // but standard JSON.parse should work if the model obeys JSON Lines.
                     const item = JSON.parse(line) as NewsItem;
                     yield item;
                 } catch (e) {
@@ -145,7 +189,7 @@ export async function* streamAiNews(): AsyncGenerator<NewsItem> {
         }
     }
     
-    // Process any remaining buffer if it's a complete JSON object
+    // معالجة أي بقايا في الذاكرة المؤقتة
     if (buffer.trim().startsWith('{') && buffer.trim().endsWith('}')) {
          try {
             const item = JSON.parse(buffer.trim()) as NewsItem;
@@ -157,50 +201,5 @@ export async function* streamAiNews(): AsyncGenerator<NewsItem> {
 
   } catch (error) {
     console.error("Failed to stream AI news:", error);
-    // We can't easily yield an error object since the return type is NewsItem. 
-    // The UI handles the empty state or we could yield a dummy error item if needed.
   }
 }
-
-export const generateEditedImage = async (
-  prompt: string,
-  imageBase64: string,
-  mimeType: string
-): Promise<string | null> => {
-  try {
-    const apiKey = getApiKey();
-    if (!apiKey) throw new Error("مفتاح API مفقود");
-
-    const ai = new GoogleGenAI({ apiKey });
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
-      contents: {
-        parts: [
-          {
-            inlineData: {
-              data: imageBase64,
-              mimeType: mimeType,
-            },
-          },
-          {
-            text: prompt,
-          },
-        ],
-      },
-      config: {
-        responseModalities: [Modality.IMAGE],
-      },
-    });
-
-    const part = response.candidates?.[0]?.content?.parts?.[0];
-    if (part && part.inlineData) {
-      return part.inlineData.data;
-    }
-    return null;
-
-  } catch (error) {
-    console.error("Image generation failed:", error);
-    throw error;
-  }
-};

@@ -5,7 +5,7 @@ import { PersonalInfoView } from './components/PersonalInfoView';
 import { AiNewsView } from './components/AiNewsView';
 import { HomeView } from './components/HomeView';
 import { ImageEditorView } from './components/ImageEditorView';
-import { SparklesIcon, InfoIcon, NewsIcon, LogoutIcon, HomeIcon, MagicWandIcon } from './components/Icons';
+import { SparklesIcon, NewsIcon, LogoutIcon, HomeIcon } from './components/Icons';
 import { ChatMessage } from './types';
 import { ApiKeyModal } from './components/ApiKeyModal';
 
