@@ -1,9 +1,13 @@
-import { GoogleGenAI, Modality } from "@google/genai";
+
+import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_PROMPT } from '../constants';
 import { NewsItem } from "../types";
 
-// استخدام النموذج التجريبي 2.0 المفتوح الذي يدعم توليد الصور ونوافذ سياق أكبر
-const MODEL_NAME = 'gemini-2.0-flash-exp';
+// نستخدم Gemini 2.0 للنصوص والدردشة لأنه سريع وذكي
+const CHAT_MODEL = 'gemini-2.0-flash-exp';
+
+// نستخدم Imagen 3 لتوليد الصور لأن Gemini 2.0 لا يدعم إخراج الصور حالياً (Error 400)
+const IMAGE_MODEL = 'imagen-3.0-generate-001';
 
 interface ImagePart {
   inlineData: {
@@ -23,7 +27,11 @@ const handleError = (error: unknown): string => {
     const errorString = String(error);
     
     if (errorString.includes('429') || errorString.includes('Quota exceeded') || errorString.includes('quota')) {
-        return "تجاوزت الحصة المسموحة (Quota Exceeded). هذا النموذج تجريبي وقد يكون عليه ضغط عالٍ، حاول مجدداً بعد دقيقة.";
+        return "تجاوزت الحصة المسموحة (Quota Exceeded). هذا النموذج تجريبي، حاول مجدداً بعد دقيقة.";
+    }
+
+    if (errorString.includes('400') || errorString.includes('INVALID_ARGUMENT') || errorString.includes('modalities')) {
+         return "عذراً، ميزة توليد الصور غير مدعومة بهذا النموذج حالياً. يرجى المحاولة لاحقاً.";
     }
 
     if (error instanceof Error) {
@@ -52,7 +60,7 @@ export const generateContent = async (
     }
 
     const response = await ai.models.generateContent({
-      model: MODEL_NAME,
+      model: CHAT_MODEL,
       contents: { parts },
       config: {
           systemInstruction: systemInstruction,
@@ -86,7 +94,7 @@ export async function* generateContentStream(
     }
 
     const responseStream = await ai.models.generateContentStream({
-        model: MODEL_NAME,
+        model: CHAT_MODEL,
         contents: { parts },
         config: {
             systemInstruction: SYSTEM_PROMPT,
@@ -126,7 +134,7 @@ export async function* streamAiNews(): AsyncGenerator<NewsItem> {
     Ensure the content is fresh and relevant. Start outputting immediately.`;
 
     const responseStream = await ai.models.generateContentStream({
-      model: MODEL_NAME,
+      model: CHAT_MODEL,
       contents: newsPrompt,
       config: {
         temperature: 0.9,
@@ -178,33 +186,24 @@ export const generateEditedImage = async (
 
     const ai = new GoogleGenAI({ apiKey });
 
-    // استخدام gemini-2.0-flash-exp مع طلب Modality.IMAGE
-    const response = await ai.models.generateContent({
-      model: MODEL_NAME,
-      contents: {
-        parts: [
-          {
-            inlineData: {
-              data: imageBase64,
-              mimeType: mimeType,
-            },
-          },
-          {
-            text: prompt + " . Generate a high quality image result based on these instructions.",
-          },
-        ],
-      },
+    // FIX: The error "Model does not support requested response modalities: {image}" 
+    // confirms gemini-2.0-flash-exp cannot output images directly via generateContent currently.
+    // We switch to 'imagen-3.0-generate-001' using generateImages.
+    // Note: generateImages creates NEW images from prompt. It does not support editing (image input) easily.
+    // We use the prompt to generate a fresh image.
+    
+    const response = await ai.models.generateImages({
+      model: IMAGE_MODEL,
+      prompt: prompt,
       config: {
-        responseModalities: [Modality.IMAGE],
-        temperature: 0.9, // رفعنا الحرارة للإبداع في الصور
+        numberOfImages: 1,
+        outputMimeType: 'image/jpeg',
       },
     });
 
-    const candidate = response.candidates?.[0];
-    const part = candidate?.content?.parts?.[0];
-    
-    if (part?.inlineData?.data) {
-      return part.inlineData.data;
+    const generatedImage = response.generatedImages?.[0]?.image;
+    if (generatedImage?.imageBytes) {
+      return generatedImage.imageBytes;
     }
     
     return null;
