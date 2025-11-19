@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getAiNews } from '../services/geminiService';
 import { NewsItem } from '../types';
-import { TrashIcon } from './Icons';
+import { TrashIcon, SearchIcon, RefreshIcon } from './Icons';
 
 interface AiNewsViewProps {
     onScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
@@ -27,6 +27,8 @@ export const AiNewsView: React.FC<AiNewsViewProps> = ({ onScroll }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [selectedNewsItem, setSelectedNewsItem] = useState<NewsItem | null>(null);
+    const [showSearch, setShowSearch] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
     const fetchCalled = useRef(false);
 
     // Load from cache on mount
@@ -43,16 +45,18 @@ export const AiNewsView: React.FC<AiNewsViewProps> = ({ onScroll }) => {
         }
     }, []);
 
-    const fetchNews = useCallback(async () => {
-        if (fetchCalled.current) return;
+    const fetchNews = useCallback(async (query?: string) => {
+        if (fetchCalled.current && !query) return;
         fetchCalled.current = true;
         
         try {
             setIsLoading(true);
             setError(null);
-            const newsItems = await getAiNews();
+            const newsItems = await getAiNews(query);
             setNews(newsItems);
-            localStorage.setItem('ai_news_cache', JSON.stringify(newsItems));
+            if (!query) {
+                localStorage.setItem('ai_news_cache', JSON.stringify(newsItems));
+            }
         } catch (err) {
             if (err instanceof Error) {
                 setError(err.message);
@@ -65,10 +69,25 @@ export const AiNewsView: React.FC<AiNewsViewProps> = ({ onScroll }) => {
         }
     }, []);
 
+    const handleSearch = () => {
+        if (searchQuery.trim()) {
+            setNews([]);
+            fetchNews(searchQuery);
+        }
+    };
+
+    const handleRefresh = () => {
+        if (window.confirm('هل تريد تحديث الأخبار؟')) {
+            setNews([]);
+            fetchNews(searchQuery);
+        }
+    };
+
     const clearCache = () => {
         if (window.confirm('هل تريد حذف النتائج المحفوظة؟')) {
             localStorage.removeItem('ai_news_cache');
             setNews([]);
+            setSearchQuery('');
             setVisibleCount(3);
             fetchNews();
         }
@@ -100,22 +119,61 @@ export const AiNewsView: React.FC<AiNewsViewProps> = ({ onScroll }) => {
         <>
             <div className="h-full overflow-y-auto p-4 pb-24 space-y-4" onScroll={onScroll}>
                 
-                <div className="flex justify-between items-center mb-2">
-                    <h2 className="text-cyan-400 font-bold text-sm">آخر أخبار AI</h2>
-                    <button 
-                        onClick={clearCache}
-                        className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-full transition-colors"
-                        title="حذف النتائج وتحديث"
-                    >
-                        <TrashIcon className="w-4 h-4" />
-                    </button>
+                <div className="sticky top-0 bg-gray-900/95 backdrop-blur z-10 py-2 border-b border-gray-800">
+                     <div className="flex justify-between items-center mb-2">
+                        <h2 className="text-cyan-400 font-bold text-sm">آخر أخبار AI</h2>
+                        <div className="flex items-center gap-2">
+                            <button 
+                                onClick={() => setShowSearch(!showSearch)}
+                                className={`p-2 rounded-full transition-colors ${showSearch ? 'bg-cyan-500/20 text-cyan-400' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+                                title="بحث"
+                            >
+                                <SearchIcon className="w-4 h-4" />
+                            </button>
+                             <button 
+                                onClick={handleRefresh}
+                                className="bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-cyan-400 p-2 rounded-full transition-colors"
+                                title="تحديث الأخبار"
+                            >
+                                <RefreshIcon className="w-4 h-4" />
+                            </button>
+                            <button 
+                                onClick={clearCache}
+                                className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-full transition-colors"
+                                title="حذف النتائج"
+                            >
+                                <TrashIcon className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {showSearch && (
+                        <div className="animate-in slide-in-from-top-2 mb-2">
+                            <div className="relative">
+                                <input 
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                                    placeholder="ابحث عن موضوع..."
+                                    className="w-full bg-gray-800 border border-gray-700 text-white text-xs rounded-xl px-4 py-2.5 focus:outline-none focus:border-cyan-500 transition-colors"
+                                />
+                                <button 
+                                    onClick={handleSearch}
+                                    className="absolute left-1.5 top-1.5 bg-cyan-600 hover:bg-cyan-700 text-white p-1.5 rounded-lg transition-colors"
+                                >
+                                    <SearchIcon className="w-3 h-3" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {error && news.length === 0 && (
                      <div className="flex flex-col items-center justify-center p-4 text-center">
                         <p className="text-red-400 mb-4">{error}</p>
                         <button
-                            onClick={() => { fetchCalled.current = false; fetchNews(); }}
+                            onClick={() => { fetchCalled.current = false; fetchNews(searchQuery); }}
                             className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-6 rounded-full transition-colors text-sm shadow-lg"
                         >
                             إعادة المحاولة
@@ -154,7 +212,9 @@ export const AiNewsView: React.FC<AiNewsViewProps> = ({ onScroll }) => {
                 {isLoading && (
                     <>
                         <NewsCardSkeleton />
-                        <div className="text-center text-gray-500 text-[10px] animate-pulse mt-4">جاري جلب آخر الأخبار التقنية...</div>
+                        <div className="text-center text-gray-500 text-[10px] animate-pulse mt-4">
+                            {searchQuery ? 'جاري البحث...' : 'جاري جلب آخر الأخبار التقنية...'}
+                        </div>
                     </>
                 )}
             </div>

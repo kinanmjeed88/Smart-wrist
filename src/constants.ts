@@ -22,6 +22,7 @@ export const SYSTEM_PROMPT = `•لا تُقدِّم أي محتوى تم تول
 معزز بالمصادر الرسمية`;
 
 export const PERSONAL_DATA_STRUCTURED: PersonalInfoItem[] = [
+  { name: 'بوت الطلبات', url: 'https://t.me/techtouchAI_bot', category: 'bot', keywords: ['bot', 'بوت', 'طلبات', 'techtouchAI_bot'] },
   { name: 'لمسة تقنية techtouch', url: 'https://t.me/techtouch7', category: 'telegram', keywords: ['techtouch', 'تقنية', 'لمسة', 'techtouch7'] },
   { name: 'مناقشات techtouch', url: 'https://t.me/techtouch6', category: 'telegram', keywords: ['مناقشات', 'discussion', 'techtouch6'] },
   { name: 'TechTouch Gaming', url: 'https://t.me/techtouch0', category: 'telegram', keywords: ['gaming', 'games', 'العاب', 'جيمينج', 'techtouch0'] },
@@ -36,4 +37,6 @@ export const PERSONAL_DATA_STRUCTURED: PersonalInfoItem[] = [
   { name: 'كل القنوات بمجلد واحد', url: 'https://t.me/addlist/Gxcy1FFJONhkMjFi', category: 'telegram-folder', keywords: ['كل', 'all', 'مجلد', 'folder', 'تجميعة'] },
   { name: 'قناة اليوتيوب', url: 'https://youtube.com/@kinanmajeed?si=I2yuzJT2rRnEHLVg', category: 'youtube', keywords: ['youtube', 'يوتيوب', 'فيديو', 'فيديوهات', 'قناتي'] },
   { name: 'حساب تيكتوك', url: 'https://www.tiktok.com/@techtouch6', category: 'tiktok', keywords: ['tiktok', 'تيكتوك', 'تيك توك'] },
+  { name: 'صفحة الفيسبوك', url: 'https://www.facebook.com/share/172Cr1ygFt/', category: 'facebook', keywords: ['facebook', 'فيسبوك', 'فيس'] },
+  { name: 'حساب انستغرام', url: 'https://www.instagram.com/techtouch0', category: 'instagram', keywords: ['instagram', 'انستغرام', 'انستا'] },
 ];

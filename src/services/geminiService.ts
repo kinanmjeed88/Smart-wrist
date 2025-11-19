@@ -145,14 +145,20 @@ export async function* generateContentStream(
   }
 }
 
-export const getAiNews = async (): Promise<NewsItem[]> => {
+export const getAiNews = async (query?: string): Promise<NewsItem[]> => {
   return retryOperation(async () => {
     const apiKey = getApiKey();
     if (!apiKey) throw new Error("مفتاح API مفقود");
 
     const ai = new GoogleGenAI({ apiKey });
     
-    const prompt = `You are a strict AI tech news analyst. Provide 9 recent AI news items (last 48h).
+    let contentPrompt = `You are a strict AI tech news analyst. Provide 9 recent AI news items (last 48h).`;
+    
+    if (query && query.trim()) {
+        contentPrompt = `You are a strict AI tech news analyst. Search for and provide 9 recent AI news items specifically related to: "${query}". If no specific news found for this topic, provide general recent AI news but mention that inside the summary.`;
+    }
+
+    const prompt = `${contentPrompt}
     
     CRITICAL LINK RULES:
     1. The 'link' field MUST be a working URL.
@@ -189,17 +195,22 @@ export const getAiNews = async (): Promise<NewsItem[]> => {
   }, 3, 1500);
 };
 
-export const getPhoneNews = async (): Promise<PhoneNewsItem[]> => {
+export const getPhoneNews = async (query?: string): Promise<PhoneNewsItem[]> => {
   return retryOperation(async () => {
     const apiKey = getApiKey();
     if (!apiKey) throw new Error("مفتاح API مفقود");
 
     const ai = new GoogleGenAI({ apiKey });
     
-    const prompt = `List exactly 9 recent smartphones released or announced in the last few months.
+    let contentPrompt = `List exactly 9 recent smartphones released or announced in the last few months.`;
+    if (query && query.trim()) {
+        contentPrompt = `Search for and list exactly 9 recent smartphones related to: "${query}". If specific match not found, list recent popular phones.`;
+    }
+
+    const prompt = `${contentPrompt}
     For each phone, provide:
     1. Model Name.
-    2. A list of 4-5 key specifications (short bullet points like 'Snapdragon 8 Gen 3', '5000mAh', '200MP Camera', '6.8 inch AMOLED').
+    2. A COMPREHENSIVE list of specifications (at least 8-10 items) covering: Processor, RAM, Storage, Display (Size, Type, Refresh Rate), Camera (Rear & Front), Battery & Charging, OS, and Build Material. Format as short strings (e.g., "Snapdragon 8 Gen 3", "5000mAh 120W").
     3. A brief summary in Arabic.
     
     Return strictly JSON array.`;

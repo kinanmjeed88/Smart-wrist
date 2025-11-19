@@ -2,7 +2,7 @@
 export interface PersonalInfoItem {
   name: string;
   url: string;
-  category: 'telegram' | 'youtube' | 'tiktok' | 'telegram-folder' | 'project';
+  category: 'telegram' | 'youtube' | 'tiktok' | 'telegram-folder' | 'project' | 'bot' | 'facebook' | 'instagram';
   keywords: string[];
 }
 

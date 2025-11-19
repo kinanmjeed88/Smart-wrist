@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getPhoneNews } from '../services/geminiService';
 import { PhoneNewsItem } from '../types';
-import { CopyIcon, PhoneIcon, TrashIcon, CpuIcon, BatteryIcon, CameraIcon, ScreenIcon, RamIcon, StorageIcon } from './Icons';
+import { CopyIcon, PhoneIcon, TrashIcon, CpuIcon, BatteryIcon, CameraIcon, ScreenIcon, RamIcon, StorageIcon, SearchIcon, RefreshIcon } from './Icons';
 import toast from 'react-hot-toast';
 
 interface PhoneNewsViewProps {
@@ -27,6 +27,8 @@ export const PhoneNewsView: React.FC<PhoneNewsViewProps> = ({ onScroll }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [expandedPhoneIndex, setExpandedPhoneIndex] = useState<number | null>(null);
+    const [showSearch, setShowSearch] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
     const fetchCalled = useRef(false);
 
     useEffect(() => {
@@ -42,16 +44,18 @@ export const PhoneNewsView: React.FC<PhoneNewsViewProps> = ({ onScroll }) => {
         }
     }, []);
 
-    const fetchNews = useCallback(async () => {
-        if (fetchCalled.current) return;
+    const fetchNews = useCallback(async (query?: string) => {
+        if (fetchCalled.current && !query) return;
         fetchCalled.current = true;
         
         try {
             setIsLoading(true);
             setError(null);
-            const phoneItems = await getPhoneNews();
+            const phoneItems = await getPhoneNews(query);
             setPhones(phoneItems);
-            localStorage.setItem('phone_news_cache', JSON.stringify(phoneItems));
+            if (!query) {
+                localStorage.setItem('phone_news_cache', JSON.stringify(phoneItems));
+            }
         } catch (err) {
             if (err instanceof Error) {
                 setError(err.message);
@@ -64,11 +68,25 @@ export const PhoneNewsView: React.FC<PhoneNewsViewProps> = ({ onScroll }) => {
         }
     }, []);
 
+    const handleSearch = () => {
+        if (searchQuery.trim()) {
+            setPhones([]);
+            fetchNews(searchQuery);
+        }
+    };
+
+    const handleRefresh = () => {
+        if (window.confirm('هل تريد تحديث القائمة بجلب نتائج جديدة؟')) {
+            setPhones([]);
+            fetchNews(searchQuery); // Refresh current search or general
+        }
+    };
+
     const clearCache = () => {
-        if (window.confirm('هل تريد حذف أخبار الهواتف المحفوظة؟')) {
+        if (window.confirm('هل تريد حذف النتائج المحفوظة؟')) {
             localStorage.removeItem('phone_news_cache');
             setPhones([]);
-            setVisibleCount(3);
+            setSearchQuery('');
             fetchNews();
             toast.success('تم الحذف والتحديث');
         }
@@ -100,27 +118,67 @@ export const PhoneNewsView: React.FC<PhoneNewsViewProps> = ({ onScroll }) => {
 
     return (
         <div className="h-full overflow-y-auto p-4 pb-24 space-y-4" onScroll={onScroll}>
-            <div className="flex justify-between items-center mb-2 sticky top-0 bg-gray-900/95 backdrop-blur z-10 py-2 border-b border-gray-800">
-                <div className="flex items-center gap-2">
-                     <div className="bg-indigo-500/20 p-1.5 rounded-lg">
-                        <PhoneIcon className="w-4 h-4 text-indigo-400" />
-                     </div>
-                    <h2 className="text-indigo-400 font-bold text-sm">أحدث الهواتف</h2>
+            <div className="sticky top-0 bg-gray-900/95 backdrop-blur z-10 py-2 border-b border-gray-800">
+                <div className="flex justify-between items-center mb-2">
+                     <div className="flex items-center gap-2">
+                        <div className="bg-indigo-500/20 p-1.5 rounded-lg">
+                            <PhoneIcon className="w-4 h-4 text-indigo-400" />
+                        </div>
+                        <h2 className="text-indigo-400 font-bold text-sm">أحدث الهواتف</h2>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={() => setShowSearch(!showSearch)}
+                            className={`p-2 rounded-full transition-colors ${showSearch ? 'bg-indigo-500/20 text-indigo-400' : 'bg-gray-800 text-gray-400 hover:text-white'}`}
+                            title="بحث"
+                        >
+                            <SearchIcon className="w-4 h-4" />
+                        </button>
+                         <button 
+                            onClick={handleRefresh}
+                            className="bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-indigo-400 p-2 rounded-full transition-colors"
+                            title="تحديث النتائج"
+                        >
+                            <RefreshIcon className="w-4 h-4" />
+                        </button>
+                        <button 
+                            onClick={clearCache}
+                            className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-full transition-colors"
+                            title="حذف النتائج"
+                        >
+                            <TrashIcon className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
-                <button 
-                    onClick={clearCache}
-                    className="bg-red-500/10 hover:bg-red-500/20 text-red-400 p-2 rounded-full transition-colors"
-                    title="حذف النتائج وتحديث"
-                >
-                    <TrashIcon className="w-4 h-4" />
-                </button>
+
+                {showSearch && (
+                    <div className="animate-in slide-in-from-top-2 mb-2">
+                        <div className="relative">
+                            <input 
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                                placeholder="ابحث عن هاتف محدد..."
+                                className="w-full bg-gray-800 border border-gray-700 text-white text-xs rounded-xl px-4 py-2.5 focus:outline-none focus:border-indigo-500 transition-colors"
+                            />
+                            <button 
+                                onClick={handleSearch}
+                                className="absolute left-1.5 top-1.5 bg-indigo-600 hover:bg-indigo-700 text-white p-1.5 rounded-lg transition-colors"
+                            >
+                                <SearchIcon className="w-3 h-3" />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {error && phones.length === 0 && (
                     <div className="flex flex-col items-center justify-center p-4 text-center">
                     <p className="text-red-400 mb-4">{error}</p>
                     <button
-                        onClick={() => { fetchCalled.current = false; fetchNews(); }}
+                        onClick={() => { fetchCalled.current = false; fetchNews(searchQuery); }}
                         className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-full transition-colors text-sm shadow-lg"
                     >
                         إعادة المحاولة
@@ -197,7 +255,9 @@ export const PhoneNewsView: React.FC<PhoneNewsViewProps> = ({ onScroll }) => {
             {isLoading && (
                 <>
                     <PhoneCardSkeleton />
-                    <div className="text-center text-gray-500 text-[10px] animate-pulse mt-4">جاري البحث عن أحدث الهواتف...</div>
+                    <div className="text-center text-gray-500 text-[10px] animate-pulse mt-4">
+                        {searchQuery ? 'جاري البحث...' : 'جاري جلب أحدث الهواتف...'}
+                    </div>
                 </>
             )}
         </div>

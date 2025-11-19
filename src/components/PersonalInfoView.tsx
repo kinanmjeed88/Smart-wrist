@@ -1,8 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChatMessage } from '../types';
+import { ChatMessage, PersonalInfoItem } from '../types';
 import { PERSONAL_DATA_STRUCTURED } from '../constants';
-import { SendIcon, MicrophoneIcon } from './Icons';
+import { SendIcon, MicrophoneIcon, TelegramIcon, YouTubeIcon, TikTokIcon, FacebookIcon, InstagramIcon, RobotIcon } from './Icons';
 import { generateContent } from '../services/geminiService';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
@@ -82,9 +82,22 @@ export const PersonalInfoView: React.FC<PersonalInfoViewProps> = ({ messages, se
     }
   };
 
+  const getIconForCategory = (category: string) => {
+      switch (category) {
+          case 'bot': return <RobotIcon className="w-3.5 h-3.5 text-cyan-400" />;
+          case 'youtube': return <YouTubeIcon className="w-3.5 h-3.5 text-red-500" />;
+          case 'tiktok': return <TikTokIcon className="w-3.5 h-3.5 text-pink-500" />;
+          case 'facebook': return <FacebookIcon className="w-3.5 h-3.5 text-blue-600" />;
+          case 'instagram': return <InstagramIcon className="w-3.5 h-3.5 text-pink-600" />;
+          case 'telegram': 
+          case 'telegram-folder':
+          default: return <TelegramIcon className="w-3.5 h-3.5 text-blue-400" />;
+      }
+  };
+
   return (
     <div className="h-full flex flex-col bg-gray-900">
-       <div className="p-2 border-b border-gray-700">
+       <div className="p-2 border-b border-gray-700 bg-gray-800/30">
         <div className="flex flex-wrap gap-2 justify-center">
           {PERSONAL_DATA_STRUCTURED.map((item) => (
             <a
@@ -92,10 +105,11 @@ export const PersonalInfoView: React.FC<PersonalInfoViewProps> = ({ messages, se
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-[calc((100%-1rem)/3)] bg-gray-700 hover:bg-gray-600 text-gray-200 text-center text-[10px] px-1 py-1.5 rounded-md transition-colors truncate"
+              className="w-[calc((100%-1rem)/2)] sm:w-[calc((100%-1.5rem)/3)] bg-gray-800 hover:bg-gray-700 border border-gray-700/50 text-gray-200 text-[10px] px-2 py-2 rounded-xl transition-all flex items-center justify-center gap-2 group"
               title={item.name}
             >
-              {item.name}
+              {getIconForCategory(item.category)}
+              <span className="truncate group-hover:text-white">{item.name}</span>
             </a>
           ))}
         </div>
