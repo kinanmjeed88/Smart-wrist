@@ -15,7 +15,6 @@ interface ImagePart {
 type Part = TextPart | ImagePart;
 
 const getApiKey = (): string => {
-  // Updated key name to match App.tsx
   return localStorage.getItem('gemini-api-key') || process.env.API_KEY || '';
 };
 
@@ -147,9 +146,15 @@ export const getAiNews = async (): Promise<NewsItem[]> => {
 
     const ai = new GoogleGenAI({ apiKey });
     
+    // Updated prompt to strictly require valid official links
+    const prompt = `You are a tech news aggregator. Provide 6 recent AI news items (last 48h).
+    CRITICAL: The 'link' field MUST be a valid, official URL to the tool, GitHub repo, or a major tech news site (TheVerge, TechCrunch, Google Blog, OpenAI Blog). 
+    DO NOT invent links. If you cannot find an official link, use a Google Search URL for the topic.
+    Return JSON array. Language: Arabic. Fields: title, summary, link, details.`;
+
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: "Give me 6 very recent AI news items (last 48 hours if possible). Return JSON array. Language: Arabic. Fields: title, summary, link, details.",
+      contents: prompt,
       config: {
         responseMimeType: "application/json",
         responseSchema: {

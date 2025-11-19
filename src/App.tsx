@@ -9,7 +9,6 @@ import { ChatMessage } from './types';
 import { ApiKeyModal } from './components/ApiKeyModal';
 import { Toaster } from 'react-hot-toast';
 
-// الإصلاح هنا: تمت إضافة 'chat' إلى التعريف
 type View = 'home' | 'aiNews' | 'chat' | 'personalInfo';
 
 // TechTouch Icon
@@ -39,7 +38,7 @@ const App: React.FC = () => {
     localStorage.removeItem('gemini-api-key');
     setHasApiKey(false);
     setView('home');
-    setChatMessages([]); // Clear messages on logout
+    setChatMessages([]); 
   };
 
   if (!hasApiKey) {
@@ -68,17 +67,16 @@ const App: React.FC = () => {
         </button>
       </header>
 
-      {/* Main Content Area */}
+      {/* Main Content Area - Added pb-16 to prevent footer overlap */}
       <main className="flex-1 overflow-hidden relative w-full">
         {view === 'home' && <HomeView setView={setView} />}
         {view === 'aiNews' && <AiNewsView />}
-        {/* FIX: ChatView requires messages and setMessages props to function correctly */}
         {view === 'chat' && <ChatView messages={chatMessages} setMessages={setChatMessages} />}
         {view === 'personalInfo' && <PersonalInfoView messages={infoMessages} setMessages={setInfoMessages} />}
       </main>
 
       {/* Bottom Navigation */}
-      <footer className="flex-shrink-0 bg-gray-900/95 backdrop-blur-lg flex justify-around items-center border-t border-gray-800 h-16 pb-safe safe-area-pb z-20">
+      <footer className="flex-shrink-0 bg-gray-900/95 backdrop-blur-lg flex justify-around items-center border-t border-gray-800 h-16 pb-safe safe-area-pb z-50">
          <button
           onClick={() => setView('aiNews')}
           className={`flex flex-col items-center justify-center w-16 h-full transition-all duration-300 ${view === 'aiNews' ? 'text-cyan-400' : 'text-gray-600 hover:text-gray-400'}`}

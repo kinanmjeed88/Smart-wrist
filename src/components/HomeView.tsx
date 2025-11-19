@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { SparklesIcon, NewsIcon, InfoIcon, ArrowRightIcon } from './Icons';
+import { SparklesIcon, NewsIcon, InfoIcon, ArrowRightIcon, CompareIcon } from './Icons';
 
 interface HomeViewProps {
   setView: (view: 'chat' | 'aiNews' | 'personalInfo') => void;
@@ -18,59 +18,77 @@ export const HomeView: React.FC<HomeViewProps> = ({ setView, onScroll }) => {
         <p className="text-gray-400 text-xs">بوابتك الذكية لعالم التقنية</p>
       </div>
 
-      <div className="space-y-4 flex-1 flex flex-col justify-center max-w-sm mx-auto w-full pb-10">
+      <div className="space-y-3 flex-1 flex flex-col justify-center max-w-sm mx-auto w-full pb-10">
         
-        {/* AI News Card */}
-        <button
-          onClick={() => setView('aiNews')}
-          className="group relative overflow-hidden rounded-2xl bg-gray-800/50 backdrop-blur-sm border border-gray-700 hover:border-cyan-500/50 transition-all duration-300 p-5 text-right w-full shadow-lg hover:shadow-cyan-500/10"
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <div className="flex items-center justify-between relative z-10">
-             <div className="bg-cyan-500/20 p-3 rounded-xl">
-                <NewsIcon className="w-6 h-6 text-cyan-400" />
-             </div>
-             <div className="flex-1 mr-4">
-                <h3 className="text-lg font-bold text-gray-100">أخبار الذكاء الاصطناعي</h3>
-                <p className="text-xs text-gray-400 mt-1">آخر التطورات والأدوات لحظة بلحظة</p>
-             </div>
-             <ArrowRightIcon className="w-5 h-5 text-gray-500 group-hover:text-cyan-400 transform group-hover:-translate-x-1 transition-all" />
-          </div>
-        </button>
-
         {/* Chat AI Card */}
         <button
           onClick={() => setView('chat')}
-          className="group relative overflow-hidden rounded-2xl bg-gray-800/50 backdrop-blur-sm border border-gray-700 hover:border-purple-500/50 transition-all duration-300 p-5 text-right w-full shadow-lg hover:shadow-purple-500/10"
+          className="group relative overflow-hidden rounded-2xl bg-gray-800/50 backdrop-blur-sm border border-gray-700 hover:border-purple-500/50 transition-all duration-300 p-4 text-right w-full shadow-lg hover:shadow-purple-500/10"
         >
            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <div className="flex items-center justify-between relative z-10">
              <div className="bg-purple-500/20 p-3 rounded-xl">
-                <SparklesIcon className="w-6 h-6 text-purple-400" />
+                <SparklesIcon className="w-5 h-5 text-purple-400" />
              </div>
-             <div className="flex-1 mr-4">
-                <h3 className="text-lg font-bold text-gray-100">محادثة الذكاء الاصطناعي</h3>
-                <p className="text-xs text-gray-400 mt-1">دردشة ذكية، تحليل صور، وترجمة ملفات</p>
+             <div className="flex-1 mr-3">
+                <h3 className="text-base font-bold text-gray-100">محادثة الذكاء الاصطناعي</h3>
+                <p className="text-[10px] text-gray-400 mt-0.5">دردشة ذكية، تحليل صور</p>
              </div>
-             <ArrowRightIcon className="w-5 h-5 text-gray-500 group-hover:text-purple-400 transform group-hover:-translate-x-1 transition-all" />
+             <ArrowRightIcon className="w-4 h-4 text-gray-500 group-hover:text-purple-400 transform group-hover:-translate-x-1 transition-all" />
+          </div>
+        </button>
+
+         {/* Comparison Card (New) */}
+         <button
+          onClick={() => setView('chat')}
+          className="group relative overflow-hidden rounded-2xl bg-gray-800/50 backdrop-blur-sm border border-gray-700 hover:border-orange-500/50 transition-all duration-300 p-4 text-right w-full shadow-lg hover:shadow-orange-500/10"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="flex items-center justify-between relative z-10">
+             <div className="bg-orange-500/20 p-3 rounded-xl">
+                <CompareIcon className="w-5 h-5 text-orange-400" />
+             </div>
+             <div className="flex-1 mr-3">
+                <h3 className="text-base font-bold text-gray-100">مقارنة الهواتف والأجهزة</h3>
+                <p className="text-[10px] text-gray-400 mt-0.5">مقارنات دقيقة ومحدثة</p>
+             </div>
+             <ArrowRightIcon className="w-4 h-4 text-gray-500 group-hover:text-orange-400 transform group-hover:-translate-x-1 transition-all" />
+          </div>
+        </button>
+
+        {/* AI News Card */}
+        <button
+          onClick={() => setView('aiNews')}
+          className="group relative overflow-hidden rounded-2xl bg-gray-800/50 backdrop-blur-sm border border-gray-700 hover:border-cyan-500/50 transition-all duration-300 p-4 text-right w-full shadow-lg hover:shadow-cyan-500/10"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="flex items-center justify-between relative z-10">
+             <div className="bg-cyan-500/20 p-3 rounded-xl">
+                <NewsIcon className="w-5 h-5 text-cyan-400" />
+             </div>
+             <div className="flex-1 mr-3">
+                <h3 className="text-base font-bold text-gray-100">أخبار الذكاء الاصطناعي</h3>
+                <p className="text-[10px] text-gray-400 mt-0.5">آخر التطورات والأدوات</p>
+             </div>
+             <ArrowRightIcon className="w-4 h-4 text-gray-500 group-hover:text-cyan-400 transform group-hover:-translate-x-1 transition-all" />
           </div>
         </button>
 
         {/* Personal Assistant Card */}
         <button
           onClick={() => setView('personalInfo')}
-          className="group relative overflow-hidden rounded-2xl bg-gray-800/50 backdrop-blur-sm border border-gray-700 hover:border-emerald-500/50 transition-all duration-300 p-5 text-right w-full shadow-lg hover:shadow-emerald-500/10"
+          className="group relative overflow-hidden rounded-2xl bg-gray-800/50 backdrop-blur-sm border border-gray-700 hover:border-emerald-500/50 transition-all duration-300 p-4 text-right w-full shadow-lg hover:shadow-emerald-500/10"
         >
            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <div className="flex items-center justify-between relative z-10">
              <div className="bg-emerald-500/20 p-3 rounded-xl">
-                <InfoIcon className="w-6 h-6 text-emerald-400" />
+                <InfoIcon className="w-5 h-5 text-emerald-400" />
              </div>
-             <div className="flex-1 mr-4">
-                <h3 className="text-lg font-bold text-gray-100">المساعد الشخصي</h3>
-                <p className="text-xs text-gray-400 mt-1">روابط قنواتي، مشاريعي، ومعلوماتي</p>
+             <div className="flex-1 mr-3">
+                <h3 className="text-base font-bold text-gray-100">المساعد الشخصي</h3>
+                <p className="text-[10px] text-gray-400 mt-0.5">روابط قنواتي ومشاريعي</p>
              </div>
-             <ArrowRightIcon className="w-5 h-5 text-gray-500 group-hover:text-emerald-400 transform group-hover:-translate-x-1 transition-all" />
+             <ArrowRightIcon className="w-4 h-4 text-gray-500 group-hover:text-emerald-400 transform group-hover:-translate-x-1 transition-all" />
           </div>
         </button>
 
@@ -78,7 +96,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ setView, onScroll }) => {
       
       <div className="mt-auto pt-4 text-center">
          <div className="inline-block px-3 py-1 rounded-full bg-gray-800/80 border border-gray-700 text-[10px] text-gray-500">
-           V 2.2 by Kinan Majeed
+           V 2.3 by Kinan Majeed
          </div>
       </div>
     </div>
