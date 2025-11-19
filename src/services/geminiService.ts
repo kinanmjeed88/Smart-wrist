@@ -193,14 +193,18 @@ export const generateEditedImage = async (
       },
     });
 
-    const part = response.candidates?.[0]?.content?.parts?.[0];
-    if (part && part.inlineData && part.inlineData.data) {
+    // Robust check for data existence to satisfy TypeScript strict checks
+    const candidate = response.candidates?.[0];
+    const part = candidate?.content?.parts?.[0];
+    
+    if (part?.inlineData?.data) {
       return part.inlineData.data;
     }
+    
     return null;
 
   } catch (error) {
     console.error("Image generation failed:", error);
-    throw error;
+    throw error; // Throw the actual error to be displayed in UI
   }
 };
