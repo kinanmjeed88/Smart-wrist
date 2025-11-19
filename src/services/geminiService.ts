@@ -22,42 +22,106 @@ const getApiKey = (): string => {
 // دالة انتظار بسيطة
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// دالة معالجة الأخطاء العامة
-const handleError = (error: unknown): string => {
-    console.error("Gemini API call failed:", error);
-    if (error instanceof Error) {
-        if (error.message.includes('API key')) {
-            return "خطأ في مفتاح API. يرجى التأكد من صلاحية المفتاح.";
+/**
+ * دالة لاستخراج نص الخطأ الحقيقي من كائنات الخطأ المعقدة أو المتداخلة
+ */
+const extractErrorDetails = (error: any): string => {
+    if (!error) return "Unknown Error";
+    
+    let msg = "";
+    if (typeof error === 'string') {
+        msg = error;
+    } else if (error instanceof Error) {
+        msg = error.message;
+    } else {
+        try {
+            msg = JSON.stringify(error);
+        } catch {
+            msg = "Non-serializable Error";
         }
-        if (error.message.includes('503') || error.message.includes('overloaded')) {
-            return "الخادم مشغول حالياً (503). يرجى المحاولة مرة أخرى.";
-        }
-        return `حدث خطأ: ${error.message}`;
     }
-    return "حدث خطأ غير معروف. يرجى التحقق من اتصالك بالإنترنت.";
+
+    // محاولة تنظيف الرسالة إذا كانت JSON string
+    // نكرر العملية لأن أحياناً تكون JSON داخل JSON داخل JSON
+    for (let i = 0; i < 3; i++) {
+        if (typeof msg === 'string' && (msg.trim().startsWith('{') || msg.trim().startsWith('['))) {
+            try {
+                const parsed = JSON.parse(msg);
+                if (parsed.error) {
+                     // وجدنا كائن خطأ بداخله
+                     if (parsed.error.message) msg = parsed.error.message;
+                     else msg = JSON.stringify(parsed.error);
+                } else if (parsed.message) {
+                    msg = parsed.message;
+                } else {
+                    // لم نجد حقول خطأ معروفة، نتوقف هنا
+                    break;
+                }
+            } catch (e) {
+                // فشل التحليل، نستخدم النص كما هو
+                break;
+            }
+        } else {
+            break;
+        }
+    }
+    return msg;
+};
+
+// دالة معالجة الأخطاء العامة للعرض للمستخدم
+const handleError = (error: unknown): string => {
+    console.error("Gemini API Error Raw:", error);
+    
+    const errorMessage = extractErrorDetails(error);
+    const lowerMsg = errorMessage.toLowerCase();
+
+    if (lowerMsg.includes('api key')) {
+        return "خطأ في مفتاح API. يرجى التأكد من صلاحية المفتاح.";
+    }
+    if (lowerMsg.includes('503') || lowerMsg.includes('overloaded') || lowerMsg.includes('unavailable')) {
+        return "الخادم مشغول جداً حالياً (503). يرجى المحاولة لاحقاً.";
+    }
+    if (lowerMsg.includes('fetch failed') || lowerMsg.includes('network')) {
+        return "مشكلة في الاتصال بالإنترنت.";
+    }
+    
+    return `حدث خطأ: ${errorMessage.substring(0, 100)}...`;
 }
 
 // دالة لإعادة المحاولة تلقائياً عند حدوث ضغط على الخادم
-async function retryOperation<T>(operation: () => Promise<T>, retries = 3, delayMs = 2000): Promise<T> {
+async function retryOperation<T>(operation: () => Promise<T>, retries = 3, baseDelay = 2000): Promise<T> {
+    let lastError: any;
     for (let i = 0; i < retries; i++) {
         try {
             return await operation();
         } catch (error: any) {
-            const isOverloaded = error?.message?.includes('503') || error?.message?.includes('overloaded') || error?.status === 503;
+            lastError = error;
+            const errorMsg = extractErrorDetails(error).toLowerCase();
             
-            // إذا كان الخطأ بسبب الضغط (503) أو فشل الشبكة، وكان لدينا محاولات متبقية
-            if ((isOverloaded || i < retries - 1) && i < retries) {
-                console.warn(`Attempt ${i + 1} failed. Retrying in ${delayMs}ms...`, error.message);
-                await delay(delayMs * (i + 1)); // زيادة وقت الانتظار تدريجياً
-                continue;
+            // التحقق مما إذا كان الخطأ يستوجب إعادة المحاولة
+            const isOverloaded = 
+                errorMsg.includes('503') || 
+                errorMsg.includes('overloaded') || 
+                errorMsg.includes('unavailable') || 
+                errorMsg.includes('too many requests') ||
+                error?.status === 503;
+            
+            // إذا لم يكن خطأ ضغط، وكان خطأ منطقي (مثل Bad Request 400)، لا نعد المحاولة
+            if (!isOverloaded && (errorMsg.includes('400') || errorMsg.includes('invalid'))) {
+                 throw error;
             }
-            throw error;
+
+            if (i < retries - 1) {
+                const waitTime = baseDelay * Math.pow(2, i); // 2s, 4s, 8s
+                console.warn(`Attempt ${i + 1} failed (Overloaded/Net: ${isOverloaded}). Retrying in ${waitTime}ms... Error:`, errorMsg);
+                await delay(waitTime);
+            }
         }
     }
-    throw new Error("فشلت العملية بعد عدة محاولات.");
+    throw lastError;
 }
 
-// دالة توليد النص العادية (مع إعادة المحاولة)
+// دالة توليد النص العادية
 export const generateContent = async (
   prompt: string,
   image?: ImagePart,
@@ -83,11 +147,10 @@ export const generateContent = async (
     });
     
     return response.text ?? '';
-  });
+  }, 3, 1500);
 };
 
-// دالة توليد النص المتدفق (Streaming) - المتدفق صعب إعادة محاولته تلقائياً بنفس الطريقة، لذا نتركه كما هو
-// لكن نضيف معالجة أفضل للخطأ
+// دالة توليد النص المتدفق (Streaming)
 export async function* generateContentStream(
   prompt: string,
   image?: ImagePart
@@ -117,15 +180,11 @@ export async function* generateContentStream(
         yield chunk.text ?? '';
     }
   } catch (error: any) {
-    if (error.message?.includes('503') || error.message?.includes('overloaded')) {
-        yield "الخادم مشغول جداً حالياً (503). يرجى إرسال الرسالة مرة أخرى بعد قليل.";
-    } else {
-        yield handleError(error);
-    }
+    yield handleError(error);
   }
 }
 
-// دالة جلب الأخبار (مع إعادة المحاولة ومعالجة قوية للأخطاء)
+// دالة جلب الأخبار
 export const getAiNews = async (): Promise<NewsItem[]> => {
   return retryOperation(async () => {
     const apiKey = getApiKey();
@@ -133,9 +192,10 @@ export const getAiNews = async (): Promise<NewsItem[]> => {
 
     const ai = new GoogleGenAI({ apiKey });
     
+    // تقليل عدد الأخبار المطلوبة من 10 إلى 6 لتقليل الحمل وتجنب Timeout
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: "Provide the 10 most recent and significant news items about AI innovations, new tools, and major advancements.",
+      contents: "Provide the 6 most recent and significant news items about AI innovations, new tools, and major advancements.",
       config: {
         systemInstruction: "You are an expert AI news analyst. Provide summaries and details in Arabic.",
         responseMimeType: "application/json",
@@ -162,53 +222,49 @@ export const getAiNews = async (): Promise<NewsItem[]> => {
         return JSON.parse(text) as NewsItem[];
     } catch (e) {
         console.error("JSON Parse Error", e);
-        throw new Error("فشل في قراءة البيانات من المصدر.");
+        throw new Error("فشل في قراءة البيانات من المصدر (JSON Error).");
     }
 
-  }, 3, 1500); // حاول 3 مرات، انتظر 1.5 ثانية وتزيد
+  }, 4, 2000); // 4 محاولات، تبدأ بانتظار 2 ثانية
 };
 
-// دالة تعديل الصور (مع إعادة المحاولة)
+// دالة تعديل الصور باستخدام نموذج gemini-2.5-flash-image
 export const generateEditedImage = async (prompt: string, imageBase64: string, mimeType: string): Promise<string | null> => {
-  try {
-    return await retryOperation(async () => {
-        const apiKey = getApiKey();
-        if (!apiKey) throw new Error("مفتاح API مفقود");
-        
-        const ai = new GoogleGenAI({ apiKey });
+  return retryOperation(async () => {
+    const apiKey = getApiKey();
+    if (!apiKey) throw new Error("مفتاح API غير موجود.");
 
-        const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: {
-            parts: [
-            {
-                inlineData: {
-                data: imageBase64,
-                mimeType: mimeType
-                }
+    const ai = new GoogleGenAI({ apiKey });
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: {
+        parts: [
+          {
+            inlineData: {
+              data: imageBase64,
+              mimeType: mimeType,
             },
-            {
-                text: prompt
-            }
-            ]
-        },
-        config: {
-            responseModalities: [Modality.IMAGE]
-        }
-        });
+          },
+          {
+            text: prompt,
+          },
+        ],
+      },
+      config: {
+        responseModalities: [Modality.IMAGE],
+      },
+    });
 
-        const parts = response.candidates?.[0]?.content?.parts;
-        if (parts) {
-            for (const part of parts) {
-                if (part.inlineData && part.inlineData.data) {
-                    return part.inlineData.data;
-                }
-            }
+    // استخراج الصورة من الرد
+    if (response.candidates?.[0]?.content?.parts) {
+      for (const part of response.candidates[0].content.parts) {
+        if (part.inlineData?.data) {
+          return part.inlineData.data;
         }
-        return null;
-    }, 2, 2000); // محاولتين فقط للصور لأنها ثقيلة
-  } catch (error) {
-    console.error("Failed to generate edited image:", error);
+      }
+    }
+    
     return null;
-  }
+  }, 3, 3000);
 };
