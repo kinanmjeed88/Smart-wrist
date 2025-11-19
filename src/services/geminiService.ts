@@ -194,7 +194,7 @@ export const generateEditedImage = async (
     });
 
     const part = response.candidates?.[0]?.content?.parts?.[0];
-    if (part && part.inlineData) {
+    if (part && part.inlineData && part.inlineData.data) {
       return part.inlineData.data;
     }
     return null;
