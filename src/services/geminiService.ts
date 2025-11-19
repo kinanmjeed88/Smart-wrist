@@ -3,11 +3,8 @@ import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_PROMPT } from '../constants';
 import { NewsItem } from "../types";
 
-// نستخدم Gemini 2.0 للنصوص والدردشة لأنه سريع وذكي
-const CHAT_MODEL = 'gemini-2.0-flash-exp';
-
-// نستخدم Imagen 3 لتوليد الصور لأن Gemini 2.0 لا يدعم إخراج الصور حالياً (Error 400)
-const IMAGE_MODEL = 'imagen-3.0-generate-001';
+// Reverting to standard text model
+const CHAT_MODEL = 'gemini-2.5-flash';
 
 interface ImagePart {
   inlineData: {
@@ -27,11 +24,7 @@ const handleError = (error: unknown): string => {
     const errorString = String(error);
     
     if (errorString.includes('429') || errorString.includes('Quota exceeded') || errorString.includes('quota')) {
-        return "تجاوزت الحصة المسموحة (Quota Exceeded). هذا النموذج تجريبي، حاول مجدداً بعد دقيقة.";
-    }
-
-    if (errorString.includes('400') || errorString.includes('INVALID_ARGUMENT') || errorString.includes('modalities')) {
-         return "عذراً، ميزة توليد الصور غير مدعومة بهذا النموذج حالياً. يرجى المحاولة لاحقاً.";
+        return "تجاوزت الحصة المسموحة (Quota Exceeded). حاول مجدداً بعد دقيقة.";
     }
 
     if (error instanceof Error) {
@@ -174,42 +167,3 @@ export async function* streamAiNews(): AsyncGenerator<NewsItem> {
     console.error("Failed to stream AI news:", error);
   }
 }
-
-export const generateEditedImage = async (
-  prompt: string,
-  imageBase64: string,
-  mimeType: string
-): Promise<string | null> => {
-  try {
-    const apiKey = getApiKey();
-    if (!apiKey) throw new Error("مفتاح API مفقود");
-
-    const ai = new GoogleGenAI({ apiKey });
-
-    // FIX: The error "Model does not support requested response modalities: {image}" 
-    // confirms gemini-2.0-flash-exp cannot output images directly via generateContent currently.
-    // We switch to 'imagen-3.0-generate-001' using generateImages.
-    // Note: generateImages creates NEW images from prompt. It does not support editing (image input) easily.
-    // We use the prompt to generate a fresh image.
-    
-    const response = await ai.models.generateImages({
-      model: IMAGE_MODEL,
-      prompt: prompt,
-      config: {
-        numberOfImages: 1,
-        outputMimeType: 'image/jpeg',
-      },
-    });
-
-    const generatedImage = response.generatedImages?.[0]?.image;
-    if (generatedImage?.imageBytes) {
-      return generatedImage.imageBytes;
-    }
-    
-    return null;
-
-  } catch (error) {
-    const friendlyError = handleError(error);
-    throw new Error(friendlyError);
-  }
-};

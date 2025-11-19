@@ -1,9 +1,9 @@
 
 import React from 'react';
-import { SparklesIcon, NewsIcon, InfoIcon, ArrowRightIcon, MagicWandIcon } from './Icons';
+import { SparklesIcon, NewsIcon, InfoIcon, ArrowRightIcon } from './Icons';
 
 interface HomeViewProps {
-  setView: (view: 'chat' | 'aiNews' | 'personalInfo' | 'imageEditor') => void;
+  setView: (view: 'chat' | 'aiNews' | 'personalInfo') => void;
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({ setView }) => {
@@ -52,24 +52,6 @@ export const HomeView: React.FC<HomeViewProps> = ({ setView }) => {
                 <p className="text-xs text-gray-400 mt-1">دردشة ذكية، تحليل صور، وترجمة ملفات</p>
              </div>
              <ArrowRightIcon className="w-5 h-5 text-gray-500 group-hover:text-purple-400 transform group-hover:-translate-x-1 transition-all" />
-          </div>
-        </button>
-
-        {/* Image Editor Card */}
-        <button
-          onClick={() => setView('imageEditor')}
-          className="group relative overflow-hidden rounded-2xl bg-gray-800/50 backdrop-blur-sm border border-gray-700 hover:border-pink-500/50 transition-all duration-300 p-5 text-right w-full shadow-lg hover:shadow-pink-500/10"
-        >
-           <div className="absolute inset-0 bg-gradient-to-r from-pink-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <div className="flex items-center justify-between relative z-10">
-             <div className="bg-pink-500/20 p-3 rounded-xl">
-                <MagicWandIcon className="w-6 h-6 text-pink-400" />
-             </div>
-             <div className="flex-1 mr-4">
-                <h3 className="text-lg font-bold text-gray-100">تعديل الصور AI</h3>
-                <p className="text-xs text-gray-400 mt-1">تحويل العمر، تغيير الملابس، تحسين الدقة</p>
-             </div>
-             <ArrowRightIcon className="w-5 h-5 text-gray-500 group-hover:text-pink-400 transform group-hover:-translate-x-1 transition-all" />
           </div>
         </button>
 
