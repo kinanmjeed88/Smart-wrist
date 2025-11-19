@@ -36,7 +36,8 @@ export const ImageEditorView: React.FC = () => {
       img.src = URL.createObjectURL(file);
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const maxDim = 1024; // 1024px is a good balance between quality and payload size
+        // Reduced max dimension to save tokens and avoid 429 quota errors
+        const maxDim = 768; 
         let width = img.width;
         let height = img.height;
 
@@ -62,8 +63,8 @@ export const ImageEditorView: React.FC = () => {
         }
         ctx.drawImage(img, 0, 0, width, height);
         
-        // Compress to JPEG 80% quality
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        // Compress to JPEG 60% quality to further reduce token count
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
         resolve(dataUrl.split(',')[1]);
       };
       img.onerror = (e) => reject(e);

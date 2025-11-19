@@ -21,6 +21,12 @@ const getApiKey = (): string => {
 
 const handleError = (error: unknown): string => {
     console.error("Gemini API call failed:", error);
+    const errorString = String(error);
+    
+    if (errorString.includes('429') || errorString.includes('Quota exceeded') || errorString.includes('quota')) {
+        return "عذراً، لقد تجاوزت الحد المسموح به للاستخدام المجاني حالياً (Quota Exceeded). يرجى المحاولة لاحقاً أو استخدام صورة أصغر حجماً.";
+    }
+
     if (error instanceof Error) {
         if (error.message.includes('API key')) {
             return "خطأ في مفتاح API. يرجى التأكد من صلاحية المفتاح.";
@@ -204,7 +210,7 @@ export const generateEditedImage = async (
     return null;
 
   } catch (error) {
-    console.error("Image generation failed:", error);
-    throw error; // Throw the actual error to be displayed in UI
+    const friendlyError = handleError(error);
+    throw new Error(friendlyError);
   }
 };
