@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { SparklesIcon, NewsIcon, InfoIcon, ArrowRightIcon, CompareIcon } from './Icons';
+import { View } from '../types';
 
 interface HomeViewProps {
-  setView: (view: 'chat' | 'aiNews' | 'personalInfo') => void;
+  setView: (view: View) => void;
   onScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
 }
 
@@ -40,7 +41,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ setView, onScroll }) => {
 
          {/* Comparison Card (New) */}
          <button
-          onClick={() => setView('chat')}
+          onClick={() => setView('comparison')}
           className="group relative overflow-hidden rounded-2xl bg-gray-800/50 backdrop-blur-sm border border-gray-700 hover:border-orange-500/50 transition-all duration-300 p-4 text-right w-full shadow-lg hover:shadow-orange-500/10"
         >
           <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

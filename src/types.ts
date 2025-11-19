@@ -1,3 +1,4 @@
+
 export interface PersonalInfoItem {
   name: string;
   url: string;
@@ -28,3 +29,5 @@ export interface NewsItem {
   link: string;
   details: string;
 }
+
+export type View = 'home' | 'aiNews' | 'chat' | 'personalInfo' | 'comparison';

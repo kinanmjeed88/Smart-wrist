@@ -42,7 +42,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages, onScr
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Add Welcome Message on Mount if empty
+  // Updated Welcome Message
   useEffect(() => {
     if (messages.length === 0) {
         setMessages([{
@@ -50,13 +50,14 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages, onScr
             sender: 'ai',
             text: `**مرحباً بك في TechTouch! 🤖**
 
-أنا هنا لمساعدتك، يمكنك أن تطلب مني:
-• 📱 **مقارنة الهواتف والأجهزة** (اضغط زر المقارنة أو اكتب "مقارنة").
-• 📄 **تلخيص وترجمة الملفات** (PDF, Word).
-• 🖼️ **تحليل الصور** وفهم محتواها.
-• 🔍 **البحث عن معلومات حديثة**.
+أنا مساعدك الذكي. إليك ما يمكنني فعله:
 
-كيف يمكنني مساعدتك اليوم؟`
+*   **إجابة استفساراتك** حول التقنية والحياة اليومية.
+*   **تحليل الصور** واستخراج النصوص منها.
+*   **تلخيص وترجمة** الملفات (PDF, Word).
+*   **البحث عن معلومات** حديثة من الويب.
+
+_لمقارنة الهواتف، يرجى استخدام زر "المقارنة" في الصفحة الرئيسية._`
         }]);
     }
   }, [messages.length, setMessages]);
@@ -65,7 +66,6 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages, onScr
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
 
-  // --- Memory Logic ---
   const updateMemory = (text: string) => {
     const currentMemory = localStorage.getItem('user_memory') || '';
     const lowerText = text.toLowerCase();
@@ -141,16 +141,12 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages, onScr
       try {
           const urlRegex = /(https?:\/\/[^\s]+)/g;
           const hasUrl = urlRegex.test(originalPrompt);
-          const isVs = originalPrompt.includes('vs') || originalPrompt.includes('مقارنة') || originalPrompt.includes('مقابل') || originalPrompt.includes('فرق');
-
+          
           let finalPrompt = originalPrompt;
           let useSearch = false;
 
           if (hasUrl) {
               finalPrompt = `Use Google Search to visit this link and summarize its key technical points in Arabic: ${originalPrompt}`;
-              useSearch = true;
-          } else if (isVs) {
-              finalPrompt = `Using Google Search for accurate specs from official sources, create a detailed comparison table (markdown table) between the items mentioned here: "${originalPrompt}". The response must include a table with two columns comparing features. Language: Arabic.`;
               useSearch = true;
           }
 
@@ -228,7 +224,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages, onScr
   };
 
   return (
-    <div className="h-full flex flex-col bg-gray-900 relative text-xs sm:text-sm">
+    <div className="h-full flex flex-col bg-gray-900 relative text-xs">
       {/* Messages List */}
       <div className="flex-1 overflow-y-auto p-2 space-y-4 pb-28" onScroll={onScroll}>
         {messages.map((msg) => (
@@ -283,7 +279,7 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages, onScr
         <div ref={messagesEndRef} />
       </div>
       
-      {/* Input Area - Fixed with better spacing for small screens */}
+      {/* Input Area - Compact for small screens */}
       <div className="absolute bottom-0 left-0 right-0 z-50 bg-[#0f1115] border-t border-gray-800 p-1.5 shadow-[0_-5px_15px_rgba(0,0,0,0.3)]">
           
           {(filePreview || (attachedFile && !attachedFile.type.startsWith('image/'))) && (
@@ -299,15 +295,15 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages, onScr
             </div>
           )}
 
-          <div className="flex items-center gap-1.5 max-w-3xl mx-auto">
+          <div className="flex items-center gap-1 max-w-3xl mx-auto px-1">
             {recognition && (
             <button onClick={toggleRecording} className={`flex-shrink-0 p-2 rounded-full bg-gray-800 text-gray-400 hover:text-white transition-all ${isRecording ? 'text-red-500 ring-1 ring-red-500' : ''}`} disabled={isLoading}>
-                <MicrophoneIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                <MicrophoneIcon className="w-4 h-4" />
             </button>
             )}
             
             <button onClick={() => fileInputRef.current?.click()} className="flex-shrink-0 p-2 rounded-full bg-gray-800 text-gray-400 hover:text-cyan-400 transition-all" disabled={isLoading}>
-                <PaperclipIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                <PaperclipIcon className="w-4 h-4" />
             </button>
 
             <input 
@@ -317,14 +313,14 @@ export const ChatView: React.FC<ChatViewProps> = ({ messages, setMessages, onScr
                 onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSend()} 
                 onFocus={() => onInputFocus && onInputFocus(true)}
                 onBlur={() => onInputFocus && onInputFocus(false)}
-                placeholder="اكتب أو الصق رابط..." 
-                className="flex-1 min-w-0 bg-gray-800 text-white border-0 rounded-full px-3 py-2.5 focus:ring-1 focus:ring-cyan-500/50 placeholder-gray-600 text-xs sm:text-sm" 
+                placeholder="اكتب هنا..." 
+                className="flex-1 min-w-0 bg-gray-800 text-white border-0 rounded-full px-3 py-2.5 focus:ring-1 focus:ring-cyan-500/50 placeholder-gray-600 text-[10px] sm:text-xs" 
                 disabled={isLoading} 
             />
             <input type="file" accept="image/*,application/pdf,.docx" ref={fileInputRef} onChange={handleFileChange} className="hidden" disabled={isLoading} />
             
-            <button onClick={handleSend} className="flex-shrink-0 p-2.5 rounded-full bg-cyan-600 text-white shadow-lg hover:bg-cyan-500 disabled:opacity-50 transition-transform active:scale-95" disabled={isLoading || (!input.trim() && !attachedFile)}>
-                <SendIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+            <button onClick={handleSend} className="flex-shrink-0 p-2 rounded-full bg-cyan-600 text-white shadow-lg hover:bg-cyan-500 disabled:opacity-50 transition-transform active:scale-95" disabled={isLoading || (!input.trim() && !attachedFile)}>
+                <SendIcon className="w-4 h-4" />
             </button>
           </div>
       </div>

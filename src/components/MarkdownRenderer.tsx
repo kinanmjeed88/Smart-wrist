@@ -10,7 +10,7 @@ interface MarkdownRendererProps {
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ text }) => {
   return (
-    <div className="markdown-content text-gray-100 text-xs sm:text-sm">
+    <div className="markdown-content text-gray-100 text-[10px] sm:text-xs">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{

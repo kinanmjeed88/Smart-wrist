@@ -146,10 +146,15 @@ export const getAiNews = async (): Promise<NewsItem[]> => {
 
     const ai = new GoogleGenAI({ apiKey });
     
-    // Updated prompt to strictly require valid official links
-    const prompt = `You are a tech news aggregator. Provide 6 recent AI news items (last 48h).
-    CRITICAL: The 'link' field MUST be a valid, official URL to the tool, GitHub repo, or a major tech news site (TheVerge, TechCrunch, Google Blog, OpenAI Blog). 
-    DO NOT invent links. If you cannot find an official link, use a Google Search URL for the topic.
+    // STRICT PROMPT FOR OFFICIAL LINKS
+    const prompt = `You are a strict AI tech news analyst. Provide 6 recent AI news items (last 48h).
+    
+    RULES FOR LINKS:
+    1. The 'link' MUST be the OFFICIAL HOMEPAGE of the tool or the OFFICIAL research paper/blog post from the company (e.g., OpenAI, Google, Anthropic).
+    2. DO NOT provide links to generic news aggregators unless necessary.
+    3. VERIFY the link exists. If you cannot find the official tool link, provide a Google Search URL query for it (e.g., "https://www.google.com/search?q=ToolName+Official+Site").
+    4. DO NOT invent paths that result in 404 errors.
+    
     Return JSON array. Language: Arabic. Fields: title, summary, link, details.`;
 
     const response = await ai.models.generateContent({
