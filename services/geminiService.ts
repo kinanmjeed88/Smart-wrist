@@ -1,123 +1,123 @@
-import {
-  GoogleGenerativeAI,
-  GenerationConfig,
-  Content,
-  Part,
-  SchemaType
-} from '@google/generative-ai';
+
+import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
+import { SYSTEM_PROMPT } from '../constants';
 import { NewsItem } from "../types";
 
-// استخدام النموذج المستقر لضمان عدم تجاوز الحصة
-const MODEL_NAME = 'gemini-1.5-flash';
+// For better type safety
+interface TextPart {
+  text: string;
+}
+interface ImagePart {
+  inlineData: {
+    mimeType: string;
+    data: string;
+  };
+}
+type Part = TextPart | ImagePart;
+
 
 const handleError = (error: unknown): string => {
-  console.error("Gemini API call failed:", error);
-  if (error instanceof Error) {
-    if (error.message.includes('429')) return 'تجاوزت الحصة المسموحة (Quota Exceeded).';
-    return `حدث خطأ أثناء الاتصال بالذكاء الاصطناعي: ${error.message}`;
-  }
-  return "حدث خطأ غير معروف. يرجى التحقق من اتصالك بالإنترنت.";
-};
-
-// دالة مساعدة لتحويل الملفات إلى صيغة يفهمها Gemini
-export const getFileParts = async (
-  files: File[]
-): Promise<{ parts: Part[]; error: string | null }> => {
-  const fileParts: Part[] = [];
-  try {
-    for (const file of files) {
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve((reader.result as string).split(',')[1]);
-        reader.onerror = (err) => reject(err);
-      });
-      fileParts.push({
-        inlineData: {
-          mimeType: file.type,
-          data: base64,
-        },
-      });
+    console.error("Gemini API call failed:", error);
+    if (error instanceof Error) {
+        return `حدث خطأ أثناء الاتصال بالذكاء الاصطناعي: ${error.message}`;
     }
-    return { parts: fileParts, error: null };
-  } catch (error) {
-    return { parts: [], error: handleError(error) };
-  }
-};
+    return "حدث خطأ غير معروف. يرجى التحقق من اتصالك بالإنترنت.";
+}
 
-export const generateContentStream = async (
-  apiKey: string,
-  history: Content[],
-  message: string,
-  fileParts: Part[]
-) => {
-  if (!apiKey) {
-    return { stream: null, error: 'مفتاح API مفقود.' };
-  }
-
+export const generateContent = async (
+  prompt: string,
+  image?: ImagePart,
+  systemInstruction: string = SYSTEM_PROMPT
+): Promise<string> => {
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+    const parts: Part[] = [{ text: prompt }];
+    if (image) {
+      parts.unshift(image);
+    }
+
+    const response: GenerateContentResponse = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: { parts },
+      config: {
+          systemInstruction: systemInstruction,
+      }
+    });
     
-    const chat = model.startChat({
-      history,
-      generationConfig: {
-        maxOutputTokens: 8192,
-      }
-    });
-
-    const stream = await chat.sendMessageStream([message, ...fileParts]);
-    return { stream, error: null };
+    return response.text;
   } catch (error) {
-    return { stream: null, error: handleError(error) };
+    return handleError(error);
   }
 };
 
-export const getAiNews = async (apiKey: string): Promise<NewsItem[]> => {
-  if (!apiKey) {
-    throw new Error("مفتاح API مفقود.");
-  }
 
+export async function* generateContentStream(
+  prompt: string,
+  image?: ImagePart
+): AsyncGenerator<string> {
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: MODEL_NAME,
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: SchemaType.ARRAY,
-          items: {
-            type: SchemaType.OBJECT,
-            properties: {
-              title: { type: SchemaType.STRING, description: 'عنوان الخبر' },
-              summary: { type: SchemaType.STRING, description: 'ملخص قصير بالعربية' },
-              link: { type: SchemaType.STRING, description: 'رابط المصدر' },
-              details: { type: SchemaType.STRING, description: 'تفاصل أكثر عن الخبر بالعربية' },
-            },
-            required: ['title', 'summary', 'link', 'details'],
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const parts: Part[] = [{ text: prompt }];
+    if (image) {
+      parts.unshift(image);
+    }
+
+    const responseStream = await ai.models.generateContentStream({
+        model: 'gemini-2.5-flash',
+        contents: { parts },
+        config: {
+            systemInstruction: SYSTEM_PROMPT,
+        }
+    });
+
+    for await (const chunk of responseStream) {
+        yield chunk.text;
+    }
+  } catch (error) {
+    yield handleError(error);
+  }
+}
+
+export const getAiNews = async (): Promise<NewsItem[]> => {
+  try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const newsPrompt = `You are an expert AI news analyst. Your task is to provide the 10 most recent and significant pieces of news regarding AI innovations, new tools, and major advancements. Provide the output as a JSON array. Each object in the array must have the following keys: "title" (a concise headline, max 2 lines), "summary" (a brief summary, in Arabic, max 5 lines), "link" (the official URL to the tool or a reputable news source), and "details" (a more in-depth explanation in Arabic). Ensure the content is fresh and relevant.`;
+
+    const newsSchema = {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING, description: 'The news headline.' },
+            summary: { type: Type.STRING, description: 'A short summary of the news in Arabic.' },
+            link: { type: Type.STRING, description: 'A URL to the tool or source.' },
+            details: { type: Type.STRING, description: 'A more detailed explanation in Arabic.' },
           },
+          required: ['title', 'summary', 'link', 'details'],
         },
+      };
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: newsPrompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: newsSchema,
       }
     });
 
-    const newsPrompt = `
-      You are an expert AI news analyst. Provide the 10 most recent and significant AI news.
-      Focus on tools like Gemini, ChatGPT, Claude, and open-source models.
-      Output must be valid JSON matching the schema.
-    `;
+    const jsonText = response.text.trim();
+    const newsData = JSON.parse(jsonText);
 
-    const result = await model.generateContent(newsPrompt);
-    const responseText = result.response.text();
-
-    if (!responseText) {
-      return [];
+    if (!Array.isArray(newsData)) {
+      throw new Error("Invalid data format received from API.");
     }
 
-    const newsData = JSON.parse(responseText);
     return newsData as NewsItem[];
 
   } catch (error) {
     console.error("Failed to fetch AI news:", error);
-    throw new Error("فشل في جلب أخبار الذكاء الاصطناعي.");
+    throw new Error("فشل في جلب أخبار الذكاء الاصطناعي. حاول تحديث الصفحة.");
   }
 };

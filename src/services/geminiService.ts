@@ -99,21 +99,24 @@ async function retryOperation<T>(operation: () => Promise<T>, retries = 3, baseD
             const errorMsg = extractErrorDetails(error).toLowerCase();
             
             // التحقق مما إذا كان الخطأ يستوجب إعادة المحاولة
-            const isOverloaded = 
+            const isRetryable = 
                 errorMsg.includes('503') || 
                 errorMsg.includes('overloaded') || 
                 errorMsg.includes('unavailable') || 
                 errorMsg.includes('too many requests') ||
+                errorMsg.includes('network') ||
+                errorMsg.includes('fetch failed') ||
                 error?.status === 503;
             
             // إذا لم يكن خطأ ضغط، وكان خطأ منطقي (مثل Bad Request 400)، لا نعد المحاولة
-            if (!isOverloaded && (errorMsg.includes('400') || errorMsg.includes('invalid'))) {
+            if (!isRetryable && (errorMsg.includes('400') || errorMsg.includes('invalid') || errorMsg.includes('api key'))) {
                  throw error;
             }
 
             if (i < retries - 1) {
-                const waitTime = baseDelay * Math.pow(2, i); // 2s, 4s, 8s
-                console.warn(`Attempt ${i + 1} failed (Overloaded/Net: ${isOverloaded}). Retrying in ${waitTime}ms... Error:`, errorMsg);
+                // زيادة وقت الانتظار تصاعدياً مع إضافة عشوائية بسيطة
+                const waitTime = baseDelay * Math.pow(2, i) + (Math.random() * 500); 
+                console.warn(`Attempt ${i + 1} failed (Retryable: ${isRetryable}). Retrying in ${Math.round(waitTime)}ms... Error:`, errorMsg);
                 await delay(waitTime);
             }
         }
@@ -147,7 +150,7 @@ export const generateContent = async (
     });
     
     return response.text ?? '';
-  }, 3, 1500);
+  }, 3, 1000);
 };
 
 // دالة توليد النص المتدفق (Streaming)
@@ -186,6 +189,7 @@ export async function* generateContentStream(
 
 // دالة جلب الأخبار
 export const getAiNews = async (): Promise<NewsItem[]> => {
+  // نستخدم 5 محاولات مع تأخير يبدأ من 2 ثانية (2، 4، 8، 16...)
   return retryOperation(async () => {
     const apiKey = getApiKey();
     if (!apiKey) throw new Error("مفتاح API مفقود");
@@ -222,10 +226,11 @@ export const getAiNews = async (): Promise<NewsItem[]> => {
         return JSON.parse(text) as NewsItem[];
     } catch (e) {
         console.error("JSON Parse Error", e);
+        // رمي خطأ هنا سيجعل الدالة تعيد المحاولة تلقائياً إذا كان الرد غير صالح
         throw new Error("فشل في قراءة البيانات من المصدر (JSON Error).");
     }
 
-  }, 4, 2000); // 4 محاولات، تبدأ بانتظار 2 ثانية
+  }, 5, 2000);
 };
 
 // دالة تعديل الصور باستخدام نموذج gemini-2.5-flash-image
@@ -266,5 +271,5 @@ export const generateEditedImage = async (prompt: string, imageBase64: string, m
     }
     
     return null;
-  }, 3, 3000);
+  }, 3, 2000);
 };
