@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   TikTokIcon, 
   YouTubeIcon, 
@@ -7,9 +7,11 @@ import {
   FacebookIcon, 
   InstagramIcon 
 } from './Icons';
-import { APP_LOGO } from '../constants';
+import { APP_LOGO, LOCAL_USER_IMAGE } from '../constants';
 
 export const AboutView: React.FC = () => {
+  const [imgSrc, setImgSrc] = useState(LOCAL_USER_IMAGE);
+
   const socialLinks = [
     { 
       icon: <TikTokIcon className="w-6 h-6" />, 
@@ -45,16 +47,21 @@ export const AboutView: React.FC = () => {
 
   return (
     <div className="h-full overflow-y-auto p-6 flex flex-col items-center animate-in fade-in">
-      <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 p-1 mb-6 shadow-2xl">
-         <div className="w-full h-full rounded-full bg-gray-900 flex items-center justify-center p-1">
-            <img src={APP_LOGO} alt="TechTouch Logo" className="w-full h-full object-contain rounded-full" />
+      <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 p-1 mb-6 shadow-2xl">
+         <div className="w-full h-full rounded-full bg-gray-900 overflow-hidden relative group">
+            <img 
+                src={imgSrc} 
+                onError={() => setImgSrc(APP_LOGO)} // Switch to default logo on error
+                alt="Kinan Majeed" 
+                className="w-full h-full object-cover rounded-full transition-transform duration-500 group-hover:scale-110" 
+            />
          </div>
       </div>
 
       <h2 className="text-2xl font-bold text-white mb-1">Kinan Majeed</h2>
       <p className="text-cyan-400 text-sm font-medium mb-6">TechTouch Developer</p>
 
-      <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-5 w-full max-w-sm shadow-lg mb-8 text-center">
+      <div className="bg-gray-800/70 backdrop-blur-sm border border-gray-700 rounded-2xl p-5 w-full max-w-sm shadow-lg mb-8 text-center">
         <p className="text-gray-300 text-sm leading-relaxed">
           كنان مجيد الصائغ، مهتم بالأخبار والمعلومات التقنية والذكاء الاصطناعي، ونشر التطبيقات المعدلة الرياضية والأفلام والتطبيقات الخدمية.
         </p>
@@ -73,7 +80,7 @@ export const AboutView: React.FC = () => {
                   rel="noopener noreferrer"
                   className={`flex flex-col items-center gap-2 group transition-transform hover:-translate-y-1`}
                 >
-                    <div className={`bg-gray-800 p-3 rounded-xl border border-gray-700 shadow-md text-gray-400 transition-colors ${link.color} group-hover:border-gray-600`}>
+                    <div className={`bg-gray-800/80 backdrop-blur-sm p-3 rounded-xl border border-gray-700 shadow-md text-gray-400 transition-colors ${link.color} group-hover:border-gray-600`}>
                         {link.icon}
                     </div>
                 </a>

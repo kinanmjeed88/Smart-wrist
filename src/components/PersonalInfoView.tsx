@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatMessage, PersonalInfoItem } from '../types';
 import { PERSONAL_DATA_STRUCTURED } from '../constants';
-import { SendIcon, MicrophoneIcon, TelegramIcon, YouTubeIcon, TikTokIcon, FacebookIcon, InstagramIcon, RobotIcon } from './Icons';
+import { SendIcon, MicrophoneIcon, TelegramIcon, YouTubeIcon, TikTokIcon, FacebookIcon, InstagramIcon, RobotIcon, ArrowRightIcon } from './Icons';
 import { generateContent } from '../services/geminiService';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
@@ -32,6 +32,7 @@ export const PersonalInfoView: React.FC<PersonalInfoViewProps> = ({ messages, se
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [showTelegramChannels, setShowTelegramChannels] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -53,7 +54,6 @@ export const PersonalInfoView: React.FC<PersonalInfoViewProps> = ({ messages, se
     setIsLoading(true);
 
     const fullPrompt = `${PERSONAL_INFO_PROMPT} "${userInput}"`;
-    // Pass false for useSearch to align with function signature
     const aiResponseText = await generateContent(fullPrompt, undefined, false, "You are a helpful assistant answering questions based only on provided data.");
 
     const aiMessage: ChatMessage = {
@@ -84,7 +84,7 @@ export const PersonalInfoView: React.FC<PersonalInfoViewProps> = ({ messages, se
 
   const getIconForCategory = (category: string) => {
       switch (category) {
-          case 'bot': return <RobotIcon className="w-3.5 h-3.5 text-cyan-400" />;
+          case 'bot': return <RobotIcon className="w-5 h-5 text-cyan-400" />;
           case 'youtube': return <YouTubeIcon className="w-3.5 h-3.5 text-red-500" />;
           case 'tiktok': return <TikTokIcon className="w-3.5 h-3.5 text-pink-500" />;
           case 'facebook': return <FacebookIcon className="w-3.5 h-3.5 text-blue-600" />;
@@ -95,25 +95,76 @@ export const PersonalInfoView: React.FC<PersonalInfoViewProps> = ({ messages, se
       }
   };
 
+  // Data Filtering
+  const botItem = PERSONAL_DATA_STRUCTURED.find(item => item.category === 'bot');
+  const telegramItems = PERSONAL_DATA_STRUCTURED.filter(item => item.category === 'telegram' || item.category === 'telegram-folder');
+  const otherItems = PERSONAL_DATA_STRUCTURED.filter(item => item.category !== 'bot' && item.category !== 'telegram' && item.category !== 'telegram-folder');
+
   return (
     <div className="h-full flex flex-col bg-gray-900">
-       <div className="p-2 border-b border-gray-700 bg-gray-800/30">
-        <div className="flex flex-wrap gap-2 justify-center">
-          {PERSONAL_DATA_STRUCTURED.map((item) => (
-            <a
-              key={item.name}
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-[calc((100%-1rem)/2)] sm:w-[calc((100%-1.5rem)/3)] bg-gray-800 hover:bg-gray-700 border border-gray-700/50 text-gray-200 text-[10px] px-2 py-2 rounded-xl transition-all flex items-center justify-center gap-2 group"
-              title={item.name}
-            >
-              {getIconForCategory(item.category)}
-              <span className="truncate group-hover:text-white">{item.name}</span>
-            </a>
-          ))}
+       <div className="p-3 border-b border-gray-700 bg-gray-800/50 backdrop-blur-sm">
+        <div className="flex flex-col gap-3">
+            {/* Bot - Distinct and at the top */}
+            {botItem && (
+                 <a
+                  href={botItem.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white text-xs font-bold px-4 py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02]"
+                >
+                  <RobotIcon className="w-5 h-5 text-white" />
+                  <span className="text-sm">{botItem.name}</span>
+                </a>
+            )}
+
+            {/* Telegram Group Toggle */}
+            <div className="w-full">
+                 <button
+                    onClick={() => setShowTelegramChannels(!showTelegramChannels)}
+                    className={`w-full flex items-center justify-between bg-gray-800 hover:bg-gray-700 border border-blue-500/30 text-gray-200 text-xs px-4 py-2.5 rounded-xl transition-all ${showTelegramChannels ? 'ring-1 ring-blue-500 bg-gray-700' : ''}`}
+                 >
+                    <div className="flex items-center gap-2">
+                        <TelegramIcon className="w-5 h-5 text-blue-400" />
+                        <span className="font-medium">قنوات تيليجرام TechTouch</span>
+                    </div>
+                    <ArrowRightIcon className={`w-4 h-4 text-gray-500 transition-transform duration-300 ${showTelegramChannels ? 'rotate-90' : 'rotate-0'}`} />
+                 </button>
+
+                 {/* Telegram Channels Grid (Collapsible) */}
+                 <div className={`grid grid-cols-2 gap-2 mt-2 overflow-hidden transition-all duration-300 ease-in-out ${showTelegramChannels ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                    {telegramItems.map((item) => (
+                        <a
+                        key={item.name}
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-gray-800/80 hover:bg-blue-600/20 border border-gray-700 hover:border-blue-500/50 text-gray-300 hover:text-blue-300 text-[10px] px-2 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                        >
+                        <TelegramIcon className="w-3 h-3 text-blue-500/70" />
+                        <span className="truncate">{item.name}</span>
+                        </a>
+                    ))}
+                 </div>
+            </div>
+
+            {/* Other Socials */}
+            <div className="flex flex-wrap gap-2 justify-center mt-1">
+                 {otherItems.map((item) => (
+                    <a
+                    key={item.name}
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 min-w-[45%] sm:min-w-[30%] bg-gray-800 hover:bg-gray-700 border border-gray-700/50 text-gray-200 text-[10px] px-3 py-2 rounded-xl transition-all flex items-center justify-center gap-2"
+                    >
+                    {getIconForCategory(item.category)}
+                    <span className="truncate">{item.name}</span>
+                    </a>
+                ))}
+            </div>
         </div>
       </div>
+
       <div className="flex-1 overflow-y-auto p-2 space-y-3">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>

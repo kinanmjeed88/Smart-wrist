@@ -3,6 +3,13 @@ import { PersonalInfoItem } from './types';
 
 export const APP_LOGO = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ibG9nb0dyYWQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjEwMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjMDZTRkQ3IiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiMzQjgyRjYiIC8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB4PSIwIiB5PSIwIiB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzExMTgyNyIgLz4KICA8Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0NSIgc3Ryb2tlPSJ1cmwoI2xvZ29HcmFkKSIgc3Ryb2tlLXdpZHRoPSIyIiBmaWxsPSJub25lIiBzdHJva2UtZGFzaGFycmF5PSIyODAgNDAiIHRyYW5zZm9ybT0icm90YXRlKDQ1IDUwIDUwKSIgLz4KICA8IS0tIFRlY2ggVCBzaGFwZSAtLT4KICA8cGF0aCBkPSJNMzAgMzVINTAgVjcwIiBzdHJva2U9InVybCgjbG9nb0dyYWQpIiBzdHJva2Utd2lkdGg9IjgiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgLz4KICA8cGF0aCBkPSJNNTAgMzVINzAiIHN0cm9rZT0idXJsKCNsb2dvR3JhZCkiIHN0cm9rZS13aWR0aD0iOCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiAvPgogIDwhLS0gQ2lyY3VpdCBkb3RzIC0tPgogIDxjaXJjbGUgY3g9IjMwIiBjeT0iMzUiIHI9IjQiIGZpbGw9IiMzQjgyRjYiIC8+CiAgPGNpcmNsZSBjeD0iNzAiIGN5PSIzNSIgcj0iNCIgZmlsbD0iIzA2Q0ZENyIgLz4KICA8Y2lyY2xlIGN4PSI1MCIgY3k9IjcwIiByPSI0IiBmaWxsPSIjMDZTRkQ3IiAvPgo8L3N2Zz4=";
 
+// مسار الصورة المحلية (يجب وضع الصورة في مجلد public)
+export const LOCAL_USER_IMAGE = "./pickinan.png";
+
+// Fallback image if local is not found (Unsplash example)
+export const USER_PROFILE_IMAGE_FALLBACK = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=880&q=80";
+
+
 export const SYSTEM_PROMPT = `•لا تُقدِّم أي محتوى تم توليده أو استنتاجه أو التكهن به أو استدلاله على أنه حقيقة.
 •إذا لم تتمكن من التحقق من معلومة بشكل مباشر، قل: 
 -“لا يمكنني التحقق من هذه المعلومة.”
@@ -22,7 +29,7 @@ export const SYSTEM_PROMPT = `•لا تُقدِّم أي محتوى تم تول
 معزز بالمصادر الرسمية`;
 
 export const PERSONAL_DATA_STRUCTURED: PersonalInfoItem[] = [
-  { name: 'بوت الطلبات', url: 'https://t.me/techtouchAI_bot', category: 'bot', keywords: ['bot', 'بوت', 'طلبات', 'techtouchAI_bot'] },
+  { name: 'بوت الطلبات والتواصل', url: 'https://t.me/techtouchAI_bot', category: 'bot', keywords: ['bot', 'بوت', 'طلبات', 'techtouchAI_bot', 'تواصل'] },
   { name: 'لمسة تقنية techtouch', url: 'https://t.me/techtouch7', category: 'telegram', keywords: ['techtouch', 'تقنية', 'لمسة', 'techtouch7'] },
   { name: 'مناقشات techtouch', url: 'https://t.me/techtouch6', category: 'telegram', keywords: ['مناقشات', 'discussion', 'techtouch6'] },
   { name: 'TechTouch Gaming', url: 'https://t.me/techtouch0', category: 'telegram', keywords: ['gaming', 'games', 'العاب', 'جيمينج', 'techtouch0'] },
