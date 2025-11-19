@@ -1,19 +1,18 @@
-
-import { GoogleGenAI, GenerateContentResponse, Type, Modality } from "@google/genai";
+import { GoogleGenAI, Modality } from "@google/genai";
 import { SYSTEM_PROMPT } from '../constants';
 import { NewsItem } from "../types";
 
-// For better type safety
-interface TextPart {
-  text: string;
-}
+// استخدام النموذج التجريبي 2.0 المفتوح الذي يدعم توليد الصور ونوافذ سياق أكبر
+const MODEL_NAME = 'gemini-2.0-flash-exp';
+
 interface ImagePart {
   inlineData: {
     mimeType: string;
     data: string;
   };
 }
-type Part = TextPart | ImagePart;
+
+type Part = { text: string } | ImagePart;
 
 const getApiKey = (): string => {
   return localStorage.getItem('gemini_api_key') || process.env.API_KEY || '';
@@ -24,17 +23,17 @@ const handleError = (error: unknown): string => {
     const errorString = String(error);
     
     if (errorString.includes('429') || errorString.includes('Quota exceeded') || errorString.includes('quota')) {
-        return "عذراً، لقد تجاوزت الحصة المجانية المحددة للنموذج (Quota Exceeded). \nبالنسبة للصور: النموذج المستخدم هو الوحيد المتاح حالياً للتعديل وقد يكون مزدحماً.\nيرجى الانتظار قليلاً والمحاولة مرة أخرى.";
+        return "تجاوزت الحصة المسموحة (Quota Exceeded). هذا النموذج تجريبي وقد يكون عليه ضغط عالٍ، حاول مجدداً بعد دقيقة.";
     }
 
     if (error instanceof Error) {
         if (error.message.includes('API key')) {
             return "خطأ في مفتاح API. يرجى التأكد من صلاحية المفتاح.";
         }
-        return `حدث خطأ أثناء الاتصال بالذكاء الاصطناعي: ${error.message}`;
+        return `حدث خطأ: ${error.message}`;
     }
-    return "حدث خطأ غير معروف. يرجى التحقق من اتصالك بالإنترنت.";
-}
+    return "حدث خطأ غير معروف";
+};
 
 export const generateContent = async (
   prompt: string,
@@ -52,12 +51,14 @@ export const generateContent = async (
       parts.unshift(image);
     }
 
-    // Use gemini-flash-latest (stable 1.5) for better free tier quota on text tasks
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-flash-latest',
+    const response = await ai.models.generateContent({
+      model: MODEL_NAME,
       contents: { parts },
       config: {
           systemInstruction: systemInstruction,
+          temperature: 0.9,
+          topP: 0.95,
+          topK: 64,
       }
     });
     
@@ -84,12 +85,14 @@ export async function* generateContentStream(
       parts.unshift(image);
     }
 
-    // Use gemini-flash-latest (stable 1.5) for better free tier quota on text tasks
     const responseStream = await ai.models.generateContentStream({
-        model: 'gemini-flash-latest',
+        model: MODEL_NAME,
         contents: { parts },
         config: {
             systemInstruction: SYSTEM_PROMPT,
+            temperature: 0.9,
+            topP: 0.95,
+            topK: 64,
         }
     });
 
@@ -108,10 +111,9 @@ export async function* streamAiNews(): AsyncGenerator<NewsItem> {
 
     const ai = new GoogleGenAI({ apiKey });
     
-    // We request strict JSON Lines format for streaming parsing
     const newsPrompt = `You are an expert AI news analyst. 
     Task: Provide the 10 most recent and significant news items about AI.
-    Output Format: JSON Lines. Each line must be a single, valid JSON object. DO NOT wrap the output in an array []. DO NOT use markdown code blocks.
+    Output Format: JSON Lines. Each line must be a single, valid JSON object. DO NOT wrap the output in an array [].
     
     Structure for each JSON object:
     {
@@ -123,10 +125,12 @@ export async function* streamAiNews(): AsyncGenerator<NewsItem> {
     
     Ensure the content is fresh and relevant. Start outputting immediately.`;
 
-    // Use gemini-flash-latest (stable 1.5) for better free tier quota
     const responseStream = await ai.models.generateContentStream({
-      model: 'gemini-flash-latest',
+      model: MODEL_NAME,
       contents: newsPrompt,
+      config: {
+        temperature: 0.9,
+      }
     });
 
     let buffer = '';
@@ -135,7 +139,6 @@ export async function* streamAiNews(): AsyncGenerator<NewsItem> {
         const text = chunk.text || '';
         buffer += text;
 
-        // Process the buffer line by line
         let newlineIndex;
         while ((newlineIndex = buffer.indexOf('\n')) >= 0) {
             const line = buffer.slice(0, newlineIndex).trim();
@@ -152,14 +155,11 @@ export async function* streamAiNews(): AsyncGenerator<NewsItem> {
         }
     }
     
-    // Process any remaining buffer if it's a complete JSON object
     if (buffer.trim().startsWith('{') && buffer.trim().endsWith('}')) {
          try {
             const item = JSON.parse(buffer.trim()) as NewsItem;
             yield item;
-        } catch (e) {
-            console.warn("Failed to parse remaining buffer:", buffer);
-        }
+        } catch (e) {}
     }
 
   } catch (error) {
@@ -178,10 +178,9 @@ export const generateEditedImage = async (
 
     const ai = new GoogleGenAI({ apiKey });
 
-    // We must use gemini-2.5-flash-image because gemini-1.5-flash DOES NOT support image generation.
-    // If 429 errors persist, it's a strict limit on the free tier for this model.
+    // استخدام gemini-2.0-flash-exp مع طلب Modality.IMAGE
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
+      model: MODEL_NAME,
       contents: {
         parts: [
           {
@@ -191,12 +190,13 @@ export const generateEditedImage = async (
             },
           },
           {
-            text: prompt,
+            text: prompt + " . Generate a high quality image result based on these instructions.",
           },
         ],
       },
       config: {
         responseModalities: [Modality.IMAGE],
+        temperature: 0.9, // رفعنا الحرارة للإبداع في الصور
       },
     });
 
